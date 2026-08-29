@@ -89,16 +89,37 @@ img, button, .btn-kith-outline, h1, h2, h3, h4, h5, h6, p, span, a, input, texta
   transition: filter 300ms cubic-bezier(0.16, 1, 0.3, 1), transform 300ms cubic-bezier(0.16, 1, 0.3, 1), background-color 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 300ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* Grayscale: remove filter to show colors on hover and active state */
+/* Grayscale: remove filter to show colors on hover - SCOPED INDIVIDUALLY */
+
+/* Direct element hover */
 img:hover,
 button:hover,
-.btn-kith-outline:hover,
+.btn-kith-outline:hover {
+  filter: grayscale(0%) !important;
+}
+
+/* Link hover: the link itself AND all its nested children un-grayscale */
 a:hover,
-a:hover *,
-button:hover *,
-.group:hover *,
-.grayscale-card:hover *,
-section:hover * {
+a:hover * {
+  filter: grayscale(0%) !important;
+}
+
+/* Button hover: button AND all nested children */
+button:hover,
+button:hover * {
+  filter: grayscale(0%) !important;
+}
+
+/* grayscale-card: ALL children un-grayscale when THAT card is hovered */
+.grayscale-card:hover,
+.grayscale-card:hover * {
+  filter: grayscale(0%) !important;
+}
+
+/* group wrapper hover: ONLY the image inside the hovered group gets colour.
+   This handles banners/cards where an absolute overlay intercepts mouse events
+   on the image beneath — only img tags are targeted, not all siblings. */
+.group:hover img {
   filter: grayscale(0%) !important;
 }
 

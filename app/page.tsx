@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 
 // 1. Editorial Blueprint Placeholder
-function BlankPlaceholder({ ratio, label, imageUrl }: { ratio: string; label: string; imageUrl?: string }) {
+function BlankPlaceholder({ ratio, label, imageUrl, hideText = false }: { ratio: string; label: string; imageUrl?: string; hideText?: boolean }) {
   return (
     <div className={`w-full ${ratio} bg-[#0c0c0e] flex flex-col items-center justify-center p-6 select-none relative group overflow-hidden`}>
       {/* Background image if loaded */}
@@ -33,14 +33,16 @@ function BlankPlaceholder({ ratio, label, imageUrl }: { ratio: string; label: st
           
           <div className="absolute w-8 h-8 border border-zinc-800/30 pointer-events-none" />
           
-          <div className="z-10 flex flex-col items-center space-y-1 text-center">
-            <span className="font-display text-[9px] tracking-[0.2em] text-zinc-500 uppercase text-center max-w-[80%] line-clamp-2">
-              {label}
-            </span>
-            <span className="font-mono text-[7px] text-zinc-700 uppercase tracking-widest mt-1">
-              {ratio.replace('aspect-[', '').replace(']', '')}
-            </span>
-          </div>
+          {!hideText && (
+            <div className="z-10 flex flex-col items-center space-y-1 text-center">
+              <span className="font-display text-[9px] tracking-[0.2em] text-zinc-500 uppercase text-center max-w-[80%] line-clamp-2">
+                {label}
+              </span>
+              <span className="font-mono text-[7px] text-zinc-700 uppercase tracking-widest mt-1">
+                {ratio.replace('aspect-[', '').replace(']', '')}
+              </span>
+            </div>
+          )}
         </>
       )}
       
@@ -71,7 +73,7 @@ export default async function Home() {
       .select('*')
       .eq('is_visible', true)
       .order('sort_order', { ascending: true });
-    sections = secData || [];
+    sections = (secData || []).filter(sec => !sec.type.endsWith('_page'));
 
     // Fetch live products for carousel
     const { data: prodData } = await supabase
@@ -161,9 +163,9 @@ export default async function Home() {
             return (
               <section key={section.id} className="w-full px-4 sm:px-6 py-0">
                 <div className="relative w-full overflow-hidden group">
-                  <BlankPlaceholder ratio={ratioClass} label={content.label || 'CAMPAIGN COVER'} imageUrl={content.image_url} />
+                  <BlankPlaceholder ratio={ratioClass} label={content.label || 'CAMPAIGN COVER'} imageUrl={content.image_url} hideText={true} />
                   
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent flex flex-col justify-end items-center text-center p-8 sm:p-12 md:p-16 space-y-3 sm:space-y-4">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent flex flex-col justify-end items-center text-center p-8 sm:p-12 md:p-16 space-y-3 sm:space-y-4 pointer-events-none">
                     <h2 className="font-display text-xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-[0.15em] text-foreground max-w-3xl leading-none">
                       {content.heading}
                     </h2>
@@ -173,7 +175,7 @@ export default async function Home() {
                     {content.cta_link && (
                       <Link 
                         href={content.cta_link} 
-                        className="btn-kith-outline mt-2"
+                        className="btn-kith-outline mt-2 pointer-events-auto"
                       >
                         {content.cta_text || 'DISCOVER'}
                       </Link>
@@ -202,9 +204,9 @@ export default async function Home() {
                       href={item.cta_link || '/shop'}
                       className="group flex flex-col space-y-3 relative overflow-hidden"
                     >
-                      <BlankPlaceholder ratio={item.ratio || 'aspect-[5/7]'} label={item.label || item.heading} imageUrl={item.image_url} />
+                      <BlankPlaceholder ratio={item.ratio || 'aspect-[5/7]'} label={item.label || item.heading} imageUrl={item.image_url} hideText={true} />
                       
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/0 to-transparent flex flex-col justify-end items-center p-4 pb-6">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/0 to-transparent flex flex-col justify-end items-center p-4 pb-6 pointer-events-none">
                         <span className="font-display text-[10px] font-extrabold uppercase tracking-[0.2em] text-foreground text-center border-b border-transparent group-hover:border-accent transition-colors pb-1">
                           {item.heading}
                         </span>
@@ -227,8 +229,9 @@ export default async function Home() {
                       ratio="aspect-[4/5] lg:aspect-auto lg:h-full lg:min-h-[400px]" 
                       label={content.label || 'FEATURED COLLECTION'} 
                       imageUrl={content.image_url} 
+                      hideText={true}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent flex flex-col justify-end p-6 space-y-2">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent flex flex-col justify-end p-6 space-y-2 pointer-events-none">
                       <h4 className="font-display text-[13px] font-bold uppercase tracking-wider text-foreground">
                         {content.heading || 'FEATURED CAMPAIGN'}
                       </h4>
@@ -236,7 +239,7 @@ export default async function Home() {
                         {content.description || 'Explore our latest releases.'}
                       </p>
                       {content.cta_link && (
-                        <Link href={content.cta_link} className="btn-kith-outline w-fit text-[9px] py-1.5 px-3">
+                        <Link href={content.cta_link} className="btn-kith-outline w-fit text-[9px] py-1.5 px-3 pointer-events-auto">
                           {content.cta_text || 'SHOP NOW'}
                         </Link>
                       )}
