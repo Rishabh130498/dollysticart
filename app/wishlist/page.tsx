@@ -176,7 +176,7 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-10 md:pt-36 md:pb-16">
       <h1 className="font-display text-2xl md:text-3xl font-extrabold uppercase tracking-wide border-b border-border-subtle pb-6 mb-8 md:mb-12">
         My Wishlist
       </h1>

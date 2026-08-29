@@ -20,6 +20,11 @@ export default function Header() {
   const router = useRouter();
   const supabase = createClient();
 
+  useEffect(() => {
+    setSearchOpen(false);
+    setIsOpen(false);
+  }, [pathname]);
+
 
   useEffect(() => {
     // 1. Scroll listener for transparent-to-solid transition
@@ -201,6 +206,7 @@ export default function Header() {
             {/* Account Settings */}
             <Link
               href={user ? '/account' : '/account?login=true'}
+              onClick={() => setSearchOpen(false)}
               className="flex h-9 w-9 items-center justify-center text-foreground/75 hover:text-accent transition-colors"
               aria-label="Account"
             >
@@ -210,6 +216,7 @@ export default function Header() {
             {/* Wishlist Icon */}
             <Link
               href="/wishlist"
+              onClick={() => setSearchOpen(false)}
               className="relative flex h-9 w-9 items-center justify-center text-foreground/75 hover:text-accent transition-colors"
               aria-label="Wishlist"
             >
@@ -224,6 +231,7 @@ export default function Header() {
             {/* Shopping Cart Bag */}
             <Link
               href="/cart"
+              onClick={() => setSearchOpen(false)}
               className="relative flex h-9 w-9 items-center justify-center text-foreground/75 hover:text-accent transition-colors"
               aria-label="Shopping Cart"
             >

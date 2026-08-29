@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-08-29
+
+### Added
+- Added pathname transition listener to the storefront navigation header which automatically closes the search overlay and mobile drawer when navigating.
+- Bound direct click events on Account, Wishlist, and Cart icons to close the search overlay instantly.
+
+### Fixed
+- Fixed top padding on Cart, Wishlist, About, Contact, and Customize Art storefront pages, preventing titles and headers from being covered or cropped by the fixed navigation bar.
+
 ## [0.1.1] - 2026-08-29
 
 ### Added
