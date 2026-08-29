@@ -3,12 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, Heart, User, ShoppingBag, Menu, X, ShieldAlert } from 'lucide-react';
+import { Search, Heart, User, ShoppingBag, Menu, X, ShieldAlert, Globe, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useCountry, SUPPORTED_COUNTRIES } from '@/context/CountryContext';
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [countryModalOpen, setCountryModalOpen] = useState(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -16,6 +19,7 @@ export default function Header() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
+  const { selectedCountry, selectCountry } = useCountry();
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -243,6 +247,16 @@ export default function Header() {
               )}
             </Link>
 
+            {/* Country, Currency & Language Switcher */}
+            <button
+              onClick={() => setCountryModalOpen(true)}
+              className="flex items-center gap-1.5 px-2 py-1 border border-zinc-800 rounded bg-zinc-950/60 text-foreground/80 hover:text-accent hover:border-accent/40 transition-all font-display text-[9px] font-bold uppercase tracking-wider"
+              title="Select Country, Currency & Language"
+            >
+              <span className="text-xs">{selectedCountry.flag}</span>
+              <span className="font-mono">{selectedCountry.currency}</span>
+            </button>
+
           </div>
         </div>
 
@@ -269,6 +283,84 @@ export default function Header() {
           </div>
         )}
       </header>
+
+      {/* Country, Currency & Language Selector Modal Popup */}
+      {countryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setCountryModalOpen(false)} />
+          
+          <div className="relative w-full max-w-md bg-[#0c0c0e] border border-zinc-800 rounded-xl p-5 sm:p-6 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+              <div className="flex items-center space-x-2">
+                <Globe className="h-4 w-4 text-accent" />
+                <h3 className="font-display text-xs font-bold uppercase tracking-wider text-foreground">
+                  Select Country & Currency
+                </h3>
+              </div>
+              <button
+                onClick={() => setCountryModalOpen(false)}
+                className="text-zinc-400 hover:text-foreground transition-colors p-1"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="my-4">
+              <input
+                type="text"
+                value={countrySearchQuery}
+                onChange={(e) => setCountrySearchQuery(e.target.value)}
+                placeholder="Search country, currency or language..."
+                className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-xs text-foreground placeholder:text-zinc-600 focus:outline-none focus:border-accent"
+              />
+            </div>
+
+            {/* Country List Grid */}
+            <div className="max-h-[320px] overflow-y-auto space-y-1.5 pr-1">
+              {SUPPORTED_COUNTRIES.filter(
+                (c) =>
+                  c.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
+                  c.currency.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
+                  c.langName.toLowerCase().includes(countrySearchQuery.toLowerCase())
+              ).map((country) => {
+                const isSelected = selectedCountry.code === country.code;
+                return (
+                  <button
+                    key={country.code}
+                    onClick={() => {
+                      selectCountry(country.code);
+                      setCountryModalOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
+                      isSelected
+                        ? 'border-accent bg-accent/10 text-foreground'
+                        : 'border-zinc-900 bg-zinc-950/40 text-zinc-300 hover:border-zinc-800 hover:bg-zinc-900'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xl">{country.flag}</span>
+                      <div className="flex flex-col">
+                        <span className="font-display text-xs font-semibold text-foreground">
+                          {country.name}
+                        </span>
+                        <span className="font-mono text-[9px] text-zinc-500">
+                          {country.currency} ({country.symbol}) &bull; {country.langName}
+                        </span>
+                      </div>
+                    </div>
+                    {isSelected && <Check className="h-4 w-4 text-accent" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="mt-4 text-[9px] font-mono text-zinc-500 text-center">
+              Real-time exchange rates & automatic language translation applied instantly.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Drawer Navigation overlay */}
       {isOpen && (

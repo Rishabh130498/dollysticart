@@ -40,6 +40,24 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  top: 0px !important;
+}
+
+/* Hide default Google Translate top banner & toolbar */
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-text-highlight {
+  display: none !important;
+}
+.skiptranslate {
+  font-size: 0 !important;
+}
+.skiptranslate * {
+  font-size: initial;
+}
+#google_translate_element {
+  display: none !important;
 }
 
 /* Custom Editorial Scrollbar */
@@ -119,7 +137,11 @@ button:hover * {
 /* group wrapper hover: ONLY the image inside the hovered group gets colour.
    This handles banners/cards where an absolute overlay intercepts mouse events
    on the image beneath — only img tags are targeted, not all siblings. */
-.group:hover img {
+/* group wrapper hover: ONLY the image inside the hovered group gets colour.
+   Also handle nested picture tags and grayscale-card hover for images */
+.group:hover img,
+.group:hover picture img,
+.grayscale-card:hover img {
   filter: grayscale(0%) !important;
 }
 

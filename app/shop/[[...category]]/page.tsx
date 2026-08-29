@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ChevronRight, Filter, Grid, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import FormattedPrice from '@/components/common/FormattedPrice';
 
 export const dynamic = 'force-dynamic';
 
@@ -392,15 +393,15 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
                       {product.discounted_price ? (
                         <>
                           <span className="font-sans text-xs text-muted line-through">
-                            {formatPrice(product.regular_price)}
+                            <FormattedPrice amountInPaise={product.regular_price} />
                           </span>
                           <span className="font-sans text-xs font-semibold text-foreground">
-                            {formatPrice(product.discounted_price)}
+                            <FormattedPrice amountInPaise={product.discounted_price} />
                           </span>
                         </>
                       ) : (
                         <span className="font-sans text-xs text-foreground">
-                          {formatPrice(product.regular_price)}
+                          <FormattedPrice amountInPaise={product.regular_price} />
                         </span>
                       )}
                     </div>

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { Outfit, Inter } from 'next/font/google';
+import Script from 'next/script';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { CountryProvider } from '@/context/CountryContext';
 import './globals.css';
 
 const outfit = Outfit({
@@ -53,9 +55,32 @@ export default function RootLayout({
       className={`${outfit.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-        <Header />
-        <main className="flex-1 w-full">{children}</main>
-        <Footer />
+        <CountryProvider>
+          <Header />
+          <main className="flex-1 w-full">{children}</main>
+          <Footer />
+
+          {/* Hidden Google Translate Container & Script Initialization */}
+          <div id="google_translate_element" className="hidden" />
+          <Script
+            id="google-translate-init"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                function googleTranslateElementInit() {
+                  new google.translate.TranslateElement({
+                    pageLanguage: 'en',
+                    autoDisplay: false
+                  }, 'google_translate_element');
+                }
+              `,
+            }}
+          />
+          <Script
+            src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+            strategy="afterInteractive"
+          />
+        </CountryProvider>
       </body>
     </html>
   );

@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import FormattedPrice from '@/components/common/FormattedPrice';
 
 // 1. Editorial Blueprint Placeholder
 function BlankPlaceholder({ ratio, label, imageUrl, hideText = false }: { ratio: string; label: string; imageUrl?: string; hideText?: boolean }) {
@@ -282,15 +283,15 @@ export default async function Home() {
                             {product.discounted_price ? (
                               <>
                                 <span className="font-mono text-[9px] text-zinc-500 line-through">
-                                  {formatPrice(product.regular_price)}
+                                  <FormattedPrice amountInPaise={product.regular_price} />
                                 </span>
                                 <span className="font-mono text-[9px] text-foreground font-semibold">
-                                  {formatPrice(product.discounted_price)}
+                                  <FormattedPrice amountInPaise={product.discounted_price} />
                                 </span>
                               </>
                             ) : (
                               <span className="font-mono text-[9px] text-foreground">
-                                {formatPrice(product.regular_price)}
+                                <FormattedPrice amountInPaise={product.regular_price} />
                               </span>
                             )}
                           </div>
@@ -373,7 +374,7 @@ export default async function Home() {
                       <div className="flex flex-col space-y-1 text-left">
                         <span className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest">{product.categories?.name || 'Art'}</span>
                         <h4 className="font-display text-[10px] tracking-wider text-foreground font-semibold group-hover:text-accent transition-colors truncate">{product.name}</h4>
-                        <span className="font-mono text-[9px] text-foreground">{formatPrice(product.regular_price)}</span>
+                        <span className="font-mono text-[9px] text-foreground"><FormattedPrice amountInPaise={product.regular_price} /></span>
                       </div>
                     </Link>
                   ))}
@@ -533,15 +534,15 @@ export default async function Home() {
                           {product.discounted_price ? (
                             <>
                               <span className="text-zinc-600 line-through">
-                                {formatPrice(product.regular_price)}
+                                <FormattedPrice amountInPaise={product.regular_price} />
                               </span>
                               <span className="text-foreground font-semibold">
-                                {formatPrice(product.discounted_price)}
+                                <FormattedPrice amountInPaise={product.discounted_price} />
                               </span>
                             </>
                           ) : (
                             <span className="text-foreground">
-                              {formatPrice(product.regular_price)}
+                              <FormattedPrice amountInPaise={product.regular_price} />
                             </span>
                           )}
                         </div>
