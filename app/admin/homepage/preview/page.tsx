@@ -15,7 +15,7 @@ function formatPrice(paise: number) {
 }
 
 // Blank Placeholder Helper
-function BlankPlaceholder({ ratio, label, imageUrl }: { ratio: string; label: string; imageUrl?: string }) {
+function BlankPlaceholder({ ratio, label, imageUrl, hideText = false }: { ratio: string; label: string; imageUrl?: string; hideText?: boolean }) {
   return (
     <div className={`w-full ${ratio} bg-[#0c0c0e] border border-zinc-900 flex flex-col items-center justify-center p-6 relative group overflow-hidden`}>
       {imageUrl ? (
@@ -32,12 +32,16 @@ function BlankPlaceholder({ ratio, label, imageUrl }: { ratio: string; label: st
             <div className="border-r border-b border-zinc-800"></div>
             <div className="border-b border-zinc-800"></div>
           </div>
-          <span className="font-display text-[9px] tracking-[0.25em] text-zinc-500 uppercase text-center max-w-[80%] z-10">
-            {label}
-          </span>
-          <span className="font-mono text-[8px] text-zinc-700 uppercase tracking-widest mt-1 z-10">
-            DRAFT PREVIEW
-          </span>
+          {!hideText && (
+            <>
+              <span className="font-display text-[9px] tracking-[0.25em] text-zinc-500 uppercase text-center max-w-[80%] z-10">
+                {label}
+              </span>
+              <span className="font-mono text-[8px] text-zinc-700 uppercase tracking-widest mt-1 z-10">
+                DRAFT PREVIEW
+              </span>
+            </>
+          )}
         </>
       )}
     </div>
@@ -54,7 +58,7 @@ export default async function HomepagePreviewPage() {
       .from('homepage_sections')
       .select('*')
       .order('sort_order', { ascending: true });
-    sections = data || [];
+    sections = (data || []).filter(sec => !sec.type.endsWith('_page'));
 
     // Fetch live products for preview consistency
     const { data: prodData } = await supabase
@@ -144,6 +148,7 @@ export default async function HomepagePreviewPage() {
                     ratio={draftData.ratio || 'aspect-[2/1]'} 
                     label={draftData.label || 'HERO IMAGE'} 
                     imageUrl={draftData.image_url} 
+                    hideText={true}
                   />
                   
                   <div className="absolute inset-0 bg-black/10 flex flex-col justify-end items-center text-center p-8 sm:p-12 md:p-16 space-y-3 sm:space-y-4">
@@ -183,6 +188,7 @@ export default async function HomepagePreviewPage() {
                         ratio="aspect-[5/7]" 
                         label={item.label || item.heading} 
                         imageUrl={item.image_url} 
+                        hideText={true}
                       />
                       
                       <div className="absolute inset-0 bg-black/50 opacity-100 flex flex-col items-center justify-center p-4">

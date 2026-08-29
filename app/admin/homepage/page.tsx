@@ -210,7 +210,7 @@ export default function ElementorHomepageEditor() {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      const initialSections = data || [];
+      const initialSections = (data || []).filter(sec => !sec.type.endsWith('_page'));
       
       // Fallback default seeds if database sections are unconfigured
       const sectionsToUse = initialSections.length > 0 ? initialSections : [
@@ -532,14 +532,14 @@ export default function ElementorHomepageEditor() {
         }
       }
 
-      // 4. Reload from database to synchronize the IDs and clean states
       const { data, error: reloadError } = await supabase
         .from('homepage_sections')
         .select('*')
         .order('sort_order', { ascending: true });
       if (reloadError) throw reloadError;
 
-      setSections(data || []);
+      const cleanData = (data || []).filter(sec => !sec.type.endsWith('_page'));
+      setSections(cleanData);
       setDeletedSectionIds([]); // clear delete tracker
 
       setSaveStatus('saved');
@@ -626,7 +626,8 @@ export default function ElementorHomepageEditor() {
         .order('sort_order', { ascending: true });
       if (reloadError) throw reloadError;
 
-      setSections(data || []);
+      const cleanData = (data || []).filter(sec => !sec.type.endsWith('_page'));
+      setSections(cleanData);
       setDeletedSectionIds([]); // clear delete tracker
 
       const copy = JSON.parse(JSON.stringify(data || []));
@@ -672,7 +673,7 @@ export default function ElementorHomepageEditor() {
     canvasOuterWrapper = 'border-x border-y border-zinc-900 rounded-lg p-2 bg-[#060606] shadow-2xl transition-all duration-300';
   } else if (viewport === 'mobile') {
     canvasFrameWidth = 'max-w-[375px]';
-    canvasOuterWrapper = 'border-[12px] border-zinc-800 rounded-[2.5rem] p-3 bg-[#060606] shadow-2xl relative transition-all duration-300 min-h-[700px]';
+    canvasOuterWrapper = 'border-[12px] border-zinc-800 rounded-[2.5rem] p-3 bg-[#060606] shadow-2xl relative transition-all duration-300 min-h-[700px] viewport-mobile';
   }
 
   return (

@@ -51,11 +51,11 @@ export default function Footer() {
   };
 
   return (
-    <footer className="w-full border-t border-border-subtle bg-background py-16 text-foreground/80">
+    <footer className="w-full border-t border-border-subtle bg-background py-16 text-foreground/80 overflow-x-auto">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         
         {/* Footers Column Grid - 5 columns layout */}
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 md:grid-cols-5 items-start">
+        <div className="grid grid-cols-5 gap-4 md:gap-12 items-start min-w-[720px] md:min-w-0">
           
           {/* Column 1: Newsletter */}
           <div className="flex flex-col space-y-4 md:col-span-1">

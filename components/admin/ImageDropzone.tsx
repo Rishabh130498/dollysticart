@@ -335,7 +335,7 @@ export default function ImageDropzone({
 
       {!imageUrl && !uploading && (
         <div className="z-1 flex flex-col items-center space-y-1">
-          <span className="font-mono text-[7px] text-zinc-700 uppercase tracking-widest">NO IMAGE CONFIGURED</span>
+          <span className="font-mono text-[7px] text-zinc-700 uppercase tracking-widest hidden md:block [.viewport-mobile_&]:hidden">NO IMAGE CONFIGURED</span>
         </div>
       )}
 
