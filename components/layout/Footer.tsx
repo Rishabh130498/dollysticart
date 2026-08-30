@@ -39,9 +39,9 @@ export default function Footer() {
       { label: 'Prints Curation', href: '/shop/art-prints' },
     ],
     policies: [
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms of Service', href: '/terms' },
       { label: 'Shipping Coordinate Policies', href: '/about' },
-      { label: 'Payment Terms & Details', href: '/about' },
-      { label: 'Data Privacy Guidelines', href: '/about' },
     ],
     follow: [
       { label: 'Instagram Feed', href: 'https://instagram.com' },

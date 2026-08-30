@@ -92,11 +92,11 @@ export async function dispatchPaymentFailedEvent(orderId: string, failureReason 
       toName: order.customer_name,
       templateId,
       params,
-      subject: `Payment Notice for Order ${params.ORDER_ID} | Dollysticart Studio`,
+      subject: `Payment Notice for Order ${params.ORDER_ID} | Dollysticart`,
       htmlContent: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #fee2e2; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #09090b; padding: 28px 24px; text-align: center; border-bottom: 3px solid #dc2626;">
-            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART STUDIO</h1>
+            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART</h1>
             <p style="color: #fca5a5; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; margin: 4px 0 0 0;">PAYMENT PROCESSING UPDATE</p>
           </div>
           <div style="padding: 28px 24px;">
@@ -152,11 +152,11 @@ export async function dispatchOrderCancelledEvent(orderId: string) {
       toName: order.customer_name,
       templateId,
       params,
-      subject: `Order Cancellation Confirmation - ${params.ORDER_ID} | Dollysticart Studio`,
+      subject: `Order Cancellation Confirmation - ${params.ORDER_ID} | Dollysticart`,
       htmlContent: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #09090b; padding: 28px 24px; text-align: center; border-bottom: 3px solid #6b7280;">
-            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART STUDIO</h1>
+            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART</h1>
             <p style="color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; margin: 4px 0 0 0;">ORDER STATUS UPDATE</p>
           </div>
           <div style="padding: 28px 24px;">
@@ -209,11 +209,11 @@ export async function dispatchRefundCompletedEvent(orderId: string, refundAmount
       toName: order.customer_name,
       templateId,
       params,
-      subject: `Refund Confirmation - Order ${params.ORDER_ID} | Dollysticart Studio`,
+      subject: `Refund Confirmation - Order ${params.ORDER_ID} | Dollysticart`,
       htmlContent: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #09090b; padding: 28px 24px; text-align: center; border-bottom: 3px solid #10b981;">
-            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART STUDIO</h1>
+            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART</h1>
             <p style="color: #6ee7b7; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; margin: 4px 0 0 0;">REFUND PROCESSED</p>
           </div>
           <div style="padding: 28px 24px;">
@@ -277,7 +277,7 @@ export async function dispatchOrderShippedEvent(
       htmlContent: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #09090b; padding: 28px 24px; text-align: center; border-bottom: 3px solid #d97706;">
-            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART STUDIO</h1>
+            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART</h1>
             <p style="color: #f59e0b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; margin: 4px 0 0 0;">SHIPMENT DISPATCH NOTICE</p>
           </div>
           <div style="padding: 28px 24px;">
@@ -293,7 +293,7 @@ export async function dispatchOrderShippedEvent(
               </div>
             </div>
             <div style="border-top: 1px solid #f3f4f6; pt: 16px; font-size: 12px; color: #9ca3af; text-align: center;">
-              Sent with love from Dollysticart Studio 🎨
+              Sent with love from Dollysticart 🎨
             </div>
           </div>
         </div>
@@ -336,7 +336,7 @@ export async function dispatchOutForDeliveryEvent(orderId: string) {
       htmlContent: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #09090b; padding: 28px 24px; text-align: center; border-bottom: 3px solid #f59e0b;">
-            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART STUDIO</h1>
+            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART</h1>
             <p style="color: #fbbf24; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; margin: 4px 0 0 0;">OUT FOR DELIVERY TODAY</p>
           </div>
           <div style="padding: 28px 24px;">
@@ -348,7 +348,7 @@ export async function dispatchOutForDeliveryEvent(orderId: string) {
               Please ensure someone is available at your delivery address to receive your artwork.
             </p>
             <div style="border-top: 1px solid #f3f4f6; pt: 16px; margin-top: 24px; font-size: 12px; color: #9ca3af; text-align: center;">
-              Sent with love from Dollysticart Studio 🎨
+              Sent with love from Dollysticart 🎨
             </div>
           </div>
         </div>
@@ -397,7 +397,7 @@ export async function dispatchDigitalDownloadEvent(orderId: string) {
       htmlContent: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #09090b; padding: 28px 24px; text-align: center; border-bottom: 3px solid #8b5cf6;">
-            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART STUDIO</h1>
+            <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 22px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART</h1>
             <p style="color: #c4b5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; margin: 4px 0 0 0;">DIGITAL ASSET DOWNLOAD</p>
           </div>
           <div style="padding: 28px 24px;">
@@ -414,7 +414,7 @@ export async function dispatchDigitalDownloadEvent(orderId: string) {
               This link is active for ${params.EXPIRES_DAYS} days. You also have <strong>lifetime access</strong> to re-generate download links anytime by logging into your <a href="${params.ACCOUNT_URL}" style="color: #8b5cf6; font-weight: bold; text-decoration: underline;">Customer Account</a>.
             </p>
             <div style="border-top: 1px solid #f3f4f6; pt: 16px; margin-top: 24px; font-size: 12px; color: #9ca3af; text-align: center;">
-              Sent with love from Dollysticart Studio 🎨
+              Sent with love from Dollysticart 🎨
             </div>
           </div>
         </div>

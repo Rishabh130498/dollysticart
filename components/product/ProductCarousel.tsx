@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import FormattedPrice from '@/components/common/FormattedPrice';
+import { getProductCardImageUrl } from '@/lib/utils/image-helpers';
 
 interface ProductCarouselProps {
   products: any[];
@@ -121,10 +122,10 @@ export default function ProductCarousel({ products, heading = 'LATEST RELEASES' 
             >
               {/* Product Image Frame */}
               <div className="relative aspect-[4/5] w-full bg-[#0c0c0e] overflow-hidden border border-zinc-900 group-hover:border-zinc-700 transition-colors">
-                {product.product_images?.[0]?.image_url ? (
+                {getProductCardImageUrl(product) ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={product.product_images[0].image_url}
+                    src={getProductCardImageUrl(product)}
                     alt={product.name}
                     draggable={false}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

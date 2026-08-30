@@ -10,7 +10,7 @@ const DEFAULT_CONTACT_CONTENT = {
   hero_description: "Have questions about shipping coordinates, packaging safety, print collections, or existing orders? Leave us a message.",
   details_title: "Studio Details",
   email_label: "Email Inquiry",
-  email_address: "support@dollysticart.com",
+  email_address: "letsmaildoly@gmail.com",
   email_subtext: "We respond within 24 business hours.",
   instagram_label: "Instagram DMs",
   instagram_handle: "@dollysticart",

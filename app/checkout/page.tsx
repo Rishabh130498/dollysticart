@@ -4,27 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import Link from 'next/link';
-import { ShoppingBag, Lock, MapPin, Mail, Phone, User, ShieldCheck, CreditCard, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Lock, MapPin, Mail, Phone, PhoneCall, User, ShieldCheck, CreditCard, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-
-// Price Formatter Helper
-function formatPrice(paise: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0
-  }).format(paise / 100);
-}
+import { useCountry } from '@/context/CountryContext';
+import { getPhoneRule, sanitizePhoneDigits, validatePhoneNumber } from '@/lib/utils/phone-helpers';
 
 export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   
+  const { selectedCountry, formatPrice } = useCountry();
+  const phoneRule = getPhoneRule(selectedCountry.code);
+  
   // Shipping details state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [telephone, setTelephone] = useState('');
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -100,6 +97,26 @@ export default function CheckoutPage() {
     return sum + (price * item.quantity);
   }, 0);
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    // Strip non-digit characters so ONLY numeric digits (0-9) are accepted
+    const digits = sanitizePhoneDigits(raw);
+    if (digits.length <= phoneRule.maxDigits) {
+      setPhone(digits);
+    }
+  };
+
+  const handleTelephoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    // Strip non-numeric characters (allow numbers, spaces, hyphens, plus)
+    const cleaned = raw.replace(/[^0-9\s\-+()]/g, '');
+    const digits = sanitizePhoneDigits(cleaned);
+    // International telephone limit: 15 digits
+    if (digits.length <= 15) {
+      setTelephone(cleaned);
+    }
+  };
+
   // Submit checkout flow
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +126,14 @@ export default function CheckoutPage() {
     // Validations
     if (!name || !email || !phone || !street || !city || !state || !postalCode) {
       setErrorMsg('Please populate all shipping and address fields.');
+      setSubmitting(false);
+      return;
+    }
+
+    // Validate mobile phone number against active country digit length rule
+    const phoneCheck = validatePhoneNumber(phone, selectedCountry.code);
+    if (!phoneCheck.isValid) {
+      setErrorMsg(phoneCheck.error || 'Invalid mobile phone number.');
       setSubmitting(false);
       return;
     }
@@ -123,11 +148,13 @@ export default function CheckoutPage() {
         shipping: {
           name,
           email,
-          phone,
+          phone: `${phoneRule.dialCode} ${sanitizePhoneDigits(phone)}`,
+          telephone: telephone.trim() || undefined,
           street,
           city,
           state,
-          postal_code: postalCode
+          postal_code: postalCode,
+          country: selectedCountry.name
         }
       };
 
@@ -153,7 +180,7 @@ export default function CheckoutPage() {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: orderData.amount,
           currency: orderData.currency,
-          name: 'Dollysticart Studio',
+          name: 'Dollysticart',
           description: 'Premium Art Purchase',
           order_id: orderData.razorpayOrderId,
           handler: async function (response: any) {
@@ -286,7 +313,7 @@ export default function CheckoutPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col space-y-1">
                 <label className="font-display text-[9px] uppercase tracking-widest text-muted flex items-center gap-1">
-                  <User className="h-3 w-3" /> Name
+                  <User className="h-3 w-3" /> Full Name <span className="text-accent">*</span>
                 </label>
                 <input
                   type="text"
@@ -300,31 +327,72 @@ export default function CheckoutPage() {
 
               <div className="flex flex-col space-y-1">
                 <label className="font-display text-[9px] uppercase tracking-widest text-muted flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> Phone
+                  <Mail className="h-3 w-3" /> Email Address <span className="text-accent">*</span>
                 </label>
                 <input
-                  type="tel"
+                  type="email"
                   required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. +91 9999999999"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="john@example.com"
                   className="h-10 border border-zinc-800 bg-background px-3 font-display text-xs tracking-wider text-foreground focus:border-accent focus:outline-none transition-colors"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col space-y-1">
-              <label className="font-display text-[9px] uppercase tracking-widest text-muted flex items-center gap-1">
-                <Mail className="h-3 w-3" /> Email
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="john@example.com"
-                className="h-10 border border-zinc-800 bg-background px-3 font-display text-xs tracking-wider text-foreground focus:border-accent focus:outline-none transition-colors"
-              />
+            {/* Mobile Phone (Required) & Optional Landline Telephone */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Primary Mobile Phone Field */}
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-display text-[9px] uppercase tracking-widest text-muted flex items-center gap-1">
+                    <Phone className="h-3 w-3" /> Mobile Phone <span className="text-accent">*</span>
+                  </label>
+                  <span className="font-mono text-[8px] text-zinc-500">
+                    {sanitizePhoneDigits(phone).length}/{phoneRule.maxDigits} digits
+                  </span>
+                </div>
+
+                <div className="flex items-center h-10 border border-zinc-800 bg-background focus-within:border-accent transition-colors">
+                  <div className="px-3 h-full bg-zinc-900 border-r border-zinc-800 flex items-center gap-1.5 shrink-0 select-none">
+                    <span className="text-xs">{selectedCountry.flag}</span>
+                    <span className="font-mono text-xs text-foreground font-semibold">{phoneRule.dialCode}</span>
+                  </div>
+                  
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    placeholder={phoneRule.placeholder}
+                    className="h-full w-full bg-transparent px-3 font-display text-xs text-foreground focus:outline-none"
+                  />
+                </div>
+                <span className="text-[9px] font-sans text-zinc-500">
+                  Required for dispatch ({selectedCountry.name}: {phoneRule.maxDigits} digits)
+                </span>
+              </div>
+
+              {/* Secondary Landline Telephone Field (Optional) */}
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-display text-[9px] uppercase tracking-widest text-muted flex items-center gap-1">
+                    <PhoneCall className="h-3 w-3" /> Landline / Telephone
+                  </label>
+                  <span className="font-mono text-[8px] text-accent uppercase font-bold">Optional</span>
+                </div>
+                
+                <input
+                  type="tel"
+                  value={telephone}
+                  onChange={handleTelephoneChange}
+                  placeholder={phoneRule.telephonePlaceholder}
+                  className="h-10 border border-zinc-800 bg-background px-3 font-display text-xs tracking-wider text-foreground focus:border-accent focus:outline-none transition-colors"
+                />
+                <span className="text-[9px] font-sans text-zinc-500">
+                  Secondary contact / extension number
+                </span>
+              </div>
             </div>
 
             {/* Address fields */}

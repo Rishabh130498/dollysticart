@@ -127,7 +127,8 @@ export default function ProductDetailsClient({ product }: { product: Product }) 
             // Include catalog details for UI display only (never trust for final payments!)
             regular_price: product.regular_price,
             discounted_price: product.discounted_price,
-            category_name: product.category_name
+            category_name: product.category_name,
+            image_url: product.images && product.images.length > 0 ? product.images[0] : undefined
           });
         }
         
@@ -164,27 +165,54 @@ export default function ProductDetailsClient({ product }: { product: Product }) 
       {/* Left: Product Images Gallery */}
       <div className="lg:col-span-7 flex flex-col space-y-4">
         {/* Main active image block */}
-        <div className="overflow-hidden bg-[#0c0c0e]">
-          <GalleryPlaceholder label={images[activeImageIdx]} index={activeImageIdx} />
+        <div className="overflow-hidden bg-[#0c0c0e] aspect-[4/5] border border-zinc-900 relative">
+          {product.images && product.images.length > 0 ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img 
+              src={product.images[activeImageIdx] || product.images[0]} 
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <GalleryPlaceholder label={images[activeImageIdx]} index={activeImageIdx} />
+          )}
         </div>
         
         {/* Gallery thumbnails */}
-        <div className="grid grid-cols-3 gap-4">
-          {images.map((imgLabel, idx) => (
-            <button
-              key={idx}
-              onClick={() => setActiveImageIdx(idx)}
-              className={`border aspect-[4/5] bg-[#0c0c0e] flex items-center justify-center p-2 relative overflow-hidden transition-all duration-300 ${
-                activeImageIdx === idx ? 'border-accent' : 'border-zinc-900 hover:border-zinc-700'
-              }`}
-            >
-              <span className="font-display text-[8px] text-zinc-500 uppercase tracking-wider text-center max-w-[80%] line-clamp-1">
-                {imgLabel}
-              </span>
-              <div className="absolute inset-0 bg-zinc-950/40 opacity-30 hover:opacity-0 transition-opacity" />
-            </button>
-          ))}
-        </div>
+        {product.images && product.images.length > 1 ? (
+          <div className="grid grid-cols-4 gap-4">
+            {product.images.map((imgUrl, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveImageIdx(idx)}
+                className={`border aspect-[4/5] bg-[#0c0c0e] flex items-center justify-center relative overflow-hidden transition-all duration-300 ${
+                  activeImageIdx === idx ? 'border-accent' : 'border-zinc-900 hover:border-zinc-700'
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imgUrl} alt={`${product.name} view ${idx + 1}`} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-zinc-950/40 opacity-30 hover:opacity-0 transition-opacity" />
+              </button>
+            ))}
+          </div>
+        ) : (!product.images || product.images.length === 0) && (
+          <div className="grid grid-cols-3 gap-4">
+            {images.map((imgLabel, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveImageIdx(idx)}
+                className={`border aspect-[4/5] bg-[#0c0c0e] flex items-center justify-center p-2 relative overflow-hidden transition-all duration-300 ${
+                  activeImageIdx === idx ? 'border-accent' : 'border-zinc-900 hover:border-zinc-700'
+                }`}
+              >
+                <span className="font-display text-[8px] text-zinc-500 uppercase tracking-wider text-center max-w-[80%] line-clamp-1">
+                  {imgLabel}
+                </span>
+                <div className="absolute inset-0 bg-zinc-950/40 opacity-30 hover:opacity-0 transition-opacity" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Right: Product specs Details Column */}

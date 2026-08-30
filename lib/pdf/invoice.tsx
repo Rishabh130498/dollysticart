@@ -138,7 +138,7 @@ const InvoiceDocument = ({ order, items }: { order: any; items: any[] }) => (
       <View style={styles.header}>
         <View>
           <Text style={styles.brandName}>DOLLYSTICART</Text>
-          <Text style={{ fontSize: 8, color: '#666666', marginTop: 2 }}>Premium Art & Canvas Paintings</Text>
+          <Text style={{ fontSize: 8, color: '#666666', marginTop: 2 }}>PREMIUM ARTWORK & SCRIBBLE COLLECTION</Text>
         </View>
         <View>
           <Text style={styles.invoiceTitle}>INVOICE RECEIPT</Text>
@@ -217,7 +217,7 @@ const InvoiceDocument = ({ order, items }: { order: any; items: any[] }) => (
 
       {/* Footer copyright */}
       <Text style={styles.footer}>
-        Thank you for your purchase! For support questions, contact support@dollysticart.com. Dollysticart Studio, Bangalore, KA.
+        Thank you for your purchase! For support questions, contact letsmaildoly@gmail.com. Dollysticart, HMH, Rajasthan (335513).
       </Text>
 
     </Page>

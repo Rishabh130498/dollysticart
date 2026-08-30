@@ -62,6 +62,8 @@ export default async function AdminLayout({
     { label: 'About Editor', href: '/admin/about', icon: Home },
     { label: 'Customize Editor', href: '/admin/customize-art', icon: Home },
     { label: 'Contact Editor', href: '/admin/contact', icon: Home },
+    { label: 'Privacy Editor', href: '/admin/privacy', icon: ShieldCheck },
+    { label: 'Terms Editor', href: '/admin/terms', icon: ShieldCheck },
     { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
     { label: 'Customer Messages', href: '/admin/messages', icon: MessageSquare },
     { label: 'Admin Settings', href: '/admin/settings', icon: ShieldCheck },

@@ -29,12 +29,17 @@ async function getProductBySlug(slug: string) {
     const supabase = await createClient();
     const { data } = await supabase
       .from('products')
-      .select('*, categories(name)')
+      .select('*, categories!left(name), product_images!left(storage_path, is_primary, sort_order)')
       .eq('slug', slug)
-      .eq('status', 'published')
+      .neq('status', 'archived')
       .single();
     
     if (data) {
+      const imgs = (data.product_images || [])
+        .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+        .map((i: any) => i.storage_path)
+        .filter(Boolean);
+
       return {
         id: data.id,
         name: data.name,
@@ -42,7 +47,8 @@ async function getProductBySlug(slug: string) {
         description: data.description || '',
         regular_price: data.regular_price,
         discounted_price: data.discounted_price,
-        category_name: data.categories?.name || 'Uncategorized'
+        category_name: data.categories?.name || 'Uncategorized',
+        images: imgs.length > 0 ? imgs : undefined
       };
     }
   } catch (error) {

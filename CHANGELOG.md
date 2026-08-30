@@ -5,6 +5,110 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.30] - 2026-08-30
+
+### Added
+- Created public Privacy Policy page ([`app/privacy/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/privacy/page.tsx)) and Terms of Service page ([`app/terms/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/terms/page.tsx)) with dynamic database content resolution.
+- Added Admin CMS editors for Privacy Policy ([`app/admin/privacy/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/admin/privacy/page.tsx)) and Terms of Service ([`app/admin/terms/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/admin/terms/page.tsx)) supporting inline editing, draft saving, and live publishing.
+- Added Privacy Policy and Terms of Service navigation links to Storefront Footer ([`components/layout/Footer.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/components/layout/Footer.tsx)) and Admin Sidebar ([`app/admin/layout.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/admin/layout.tsx)).
+- Built country-specific mobile phone validation and digit sanitization helpers ([`lib/utils/phone-helpers.ts`](file:///d:/Projects/antigravity/dollysticart_ecom/lib/utils/phone-helpers.ts)) with landline/telephone support on checkout (`app/checkout/page.tsx`).
+
+### Changed
+- Updated support email address across all transactional email templates (`lib/email/email-events.ts`, `lib/email/brevo.ts`, `lib/pdf/invoice.tsx`), contact pages (`app/contact/page.tsx`, `app/admin/contact/page.tsx`), and policy documents to `letsmaildoly@gmail.com`.
+- Updated email header and subject branding titles from `DOLLYSTICART STUDIO` / `Dollysticart Studio` to `DOLLYSTICART` / `Dollysticart`.
+
+### Fixed
+- Fixed missing cart item thumbnail renders by joining `product_images` in cart database queries (`app/cart/page.tsx`).
+- Updated global CSS hover text overrides (`app/globals.css`) forcing all child text elements to crisp 100% black (`#000000`) on neon yellow hover.
+- Added `suppressHydrationWarning` to `<html>` and `<body>` tags in `app/layout.tsx` to prevent third-party script hydration attribute mismatch warnings.
+- Updated Razorpay payment verification (`app/api/razorpay/verify/route.ts` & `app/api/razorpay/order/route.ts`) to support Test Mode verification pass-through and automatic Brevo transactional email dispatch.
+
+---
+
+## [0.1.29] - 2026-08-30
+
+### Fixed
+- Fixed CSS z-index stacking context in [`BlankPlaceholder`](file:///d:/Projects/antigravity/dollysticart_ecom/app/shop/%5B%5B...category%5D%5D/page.tsx#L20) component. Explicitly elevated image element to `z-10` and overlay to `z-20` so background containers do not obscure uploaded artwork image renders.
+
+---
+
+## [0.1.28] - 2026-08-30
+
+### Fixed
+- Added unified image resolver utility ([`lib/utils/image-helpers.ts`](file:///d:/Projects/antigravity/dollysticart_ecom/lib/utils/image-helpers.ts)) handling nested arrays, single object relations, direct strings, and primary flags.
+- Updated product cards across Shop Catalog ([`app/shop/[[...category]]/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/shop/%5B%5B...category%5D%5D/page.tsx#L380)), Homepage ([`app/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/page.tsx#L60)), and Product Carousel ([`components/product/ProductCarousel.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/components/product/ProductCarousel.tsx#L125)) to use `getProductCardImageUrl` so artwork images render reliably on all product cards.
+
+---
+
+## [0.1.27] - 2026-08-30
+
+### Fixed
+- Updated product detail page route ([`app/product/[slug]/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/product/%5Bslug%5D/page.tsx#L27)) to query linked `product_images!left(storage_path, is_primary, sort_order)`.
+- Updated [`ProductDetailsClient.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/components/product/ProductDetailsClient.tsx#L164) to render main gallery image and thumbnail image buttons for uploaded artwork assets.
+
+---
+
+## [0.1.26] - 2026-08-30
+
+### Fixed
+- Fixed database column mapping for product images in `app/page.tsx`, `app/shop/[[...category]]/page.tsx`, and `components/product/ProductCarousel.tsx` by querying the exact PostgreSQL schema column `storage_path` (instead of `image_url`). This resolves the issue where uploaded product artwork images were rendering as blank placeholders across the site.
+
+---
+
+## [0.1.25] - 2026-08-30
+
+### Fixed
+- Added explicit `export const revalidate = 0;` and `export const dynamic = 'force-dynamic';` directives on Homepage ([`app/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/page.tsx#L2)) and Shop Catalog ([`app/shop/[[...category]]/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/shop/%5B%5B...category%5D%5D/page.tsx#L8)). This disables Next.js stale page caching so newly created products (`NOTEPAD`, `Towel`, etc.) and categories reflect live across the site instantly.
+
+---
+
+## [0.1.24] - 2026-08-30
+
+### Fixed
+- Fixed PostgREST relational query joins across `app/shop/[[...category]]/page.tsx`, `app/page.tsx`, and `app/product/[slug]/page.tsx` by using explicit `LEFT JOIN` syntax (`categories!left(name)` & `product_images!left(image_url)`). This resolves the issue where uncategorized products or products without primary images were being filtered out by default PostgREST INNER JOIN behavior.
+
+---
+
+## [0.1.23] - 2026-08-30
+
+### Fixed
+- Fixed product status fallback mapping in `app/page.tsx` to automatically display non-archived products if none are marked published.
+- Added automatic Product Swiper section inclusion in `app/page.tsx` guaranteeing that homepage layouts always render active products regardless of custom CMS layout configurations.
+- Changed default product status in `ProductForm.tsx` from `'draft'` to `'published'` so newly created products immediately go live on the storefront.
+
+---
+
+## [0.1.22] - 2026-08-30
+
+### Added
+- Added dedicated **FEATURED STUDIO EDITIONS** section on homepage ([`app/page.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/app/page.tsx#L129)) to showcase products marked with **"Feature on Homepage"** (`featured = true`).
+
+---
+
+## [0.1.21] - 2026-08-30
+
+### Fixed
+- Fixed homepage query logic (`app/page.tsx`) to prioritize products with `featured = true` at the top of the homepage product swiper and featured product sections.
+
+---
+
+## [0.1.20] - 2026-08-30
+
+### Fixed
+- Fixed PostgreSQL UUID type error (`invalid input syntax for type uuid: "c1"`) by generating standard 36-character UUID strings for category seeding in both `supabase/migrations/20260830000002_seed_categories.sql` and `app/admin/categories/page.tsx`.
+
+---
+
+## [0.1.19] - 2026-08-30
+
+### Added
+- Created SQL migration `supabase/migrations/20260830000002_seed_categories.sql` seeding all 12 default store categories into the Supabase database.
+- Added **SEED DEFAULTS** instant populator button in Admin Categories (`app/admin/categories/page.tsx`).
+- Added safety deletion check in Admin Categories displaying an assigned products count warning before setting assigned products to `Uncategorized` and removing the category row.
+- Added bulk checkbox selection tool (`[x] Select All` and per-row product checkboxes) and sticky **Bulk Category Assignment Bar** in Admin Shop Inventory Dashboard (`app/admin/shop/page.tsx`).
+
+---
+
 ## [0.1.18] - 2026-08-30
 
 ### Added

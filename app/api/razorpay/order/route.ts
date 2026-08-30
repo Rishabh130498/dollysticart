@@ -100,6 +100,8 @@ export async function POST(req: Request) {
             city: shipping.city,
             state: shipping.state,
             postal_code: shipping.postal_code,
+            country: shipping.country || null,
+            telephone: shipping.telephone || null,
           },
           status: 'pending',
           payment_status: 'pending',
@@ -137,8 +139,15 @@ export async function POST(req: Request) {
     // 7. Request Razorpay Order ID from Payment Gateway
     let razorpayOrderId = '';
     
-    // Check if keys are placeholders (mock mode)
-    const isMockMode = !process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID.includes('mock');
+    // Check if keys are placeholders or test keys (mock mode)
+    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '';
+    const secret = process.env.RAZORPAY_KEY_SECRET || '';
+    const isMockMode =
+      !keyId ||
+      keyId.includes('mock') ||
+      keyId.includes('your_public_key_id') ||
+      !secret ||
+      secret.includes('your_razorpay_secret_key');
 
     if (isMockMode) {
       // Mock flow for offline development

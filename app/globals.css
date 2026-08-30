@@ -237,19 +237,46 @@ a:hover .border-accent,
   border-color: var(--color-accent) !important;
 }
 
-.bg-accent, .bg-accent\/5 {
-  background-color: #18181b !important; /* default grayscale background */
-  color: #a1a1aa !important;
+.bg-accent, .bg-accent\/5, .bg-accent\/10, .bg-accent\/20 {
+  background-color: #0c0c0e !important; /* dark background when not hovered */
+  color: #a1a1aa !important; /* standard editorial grey text when not hovered */
   transition: var(--transition-smooth) !important;
 }
+
+.bg-accent *,
+.bg-accent\/5 *,
+.bg-accent\/10 *,
+.bg-accent\/20 * {
+  color: #a1a1aa !important; /* standard editorial grey text for children when not hovered */
+}
+
+/* ON HOVER: Background turns to neon yellow highlighter, ALL text and children turn to crisp BLACK */
 .bg-accent:hover,
+.bg-accent\/5:hover,
+.bg-accent\/10:hover,
+.bg-accent\/20:hover,
 .group:hover .bg-accent,
+.group:hover .bg-accent\/5,
+.group:hover .bg-accent\/10,
+.group:hover .bg-accent\/20,
 a:hover .bg-accent,
-.grayscale-card:hover .bg-accent,
-.bg-accent\/5:hover {
+.grayscale-card:hover .bg-accent {
   background-color: var(--color-accent) !important;
   color: #000000 !important;
-  box-shadow: 0 0 10px rgba(210, 255, 0, 0.2) !important;
+  box-shadow: 0 0 15px rgba(210, 255, 0, 0.25) !important;
+}
+
+.bg-accent:hover *,
+.bg-accent\/5:hover *,
+.bg-accent\/10:hover *,
+.bg-accent\/20:hover *,
+.group:hover .bg-accent *,
+.group:hover .bg-accent\/5 *,
+.group:hover .bg-accent\/10 *,
+.group:hover .bg-accent\/20 *,
+a:hover .bg-accent *,
+.grayscale-card:hover .bg-accent * {
+  color: #000000 !important;
 }
 
 /* 5. Subtle Accent Radial Glow on Large Section Hover */

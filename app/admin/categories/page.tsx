@@ -142,25 +142,84 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  // Delete Category
-  const handleDelete = async (catId: string) => {
-    if (!confirm('Are you sure you want to delete this category? Products in this category will become uncategorized.')) {
-      return;
-    }
-
+  // Delete Category with safety product count check & auto-uncategorize
+  const handleDelete = async (catId: string, catName: string) => {
     try {
+      // 1. Check assigned products count
+      const { count } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('category_id', catId);
+
+      const assignedCount = count || 0;
+
+      const confirmMsg = assignedCount > 0
+        ? `WARNING: "${catName}" has ${assignedCount} assigned product(s).\n\nIf you delete this category, these ${assignedCount} product(s) will become "Uncategorized".\n\nAre you sure you want to proceed?`
+        : `Are you sure you want to delete the category "${catName}"?`;
+
+      if (!confirm(confirmMsg)) return;
+
+      // 2. Unassign products first (set category_id = null)
+      if (assignedCount > 0) {
+        await supabase
+          .from('products')
+          .update({ category_id: null })
+          .eq('category_id', catId);
+      }
+
+      // 3. Delete category row
       const { error } = await supabase
         .from('categories')
         .delete()
         .eq('id', catId);
 
       if (error) throw error;
-      setSuccessMsg('Category deleted.');
+      setSuccessMsg(`Category "${catName}" deleted successfully.`);
       handleSelectNew();
       await loadCategories();
     } catch (err: any) {
       console.error(err);
-      alert('Failed to delete category.');
+      alert(err.message || 'Failed to delete category.');
+    }
+  };
+
+  // Seed default categories into database
+  const handleSeedDefaultCategories = async () => {
+    setSubmitting(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const seedParents = [
+        { id: 'c1000000-0000-0000-0000-000000000001', name: 'Original Art', slug: 'original-art', description: 'Hand-painted textured canvas original artworks', parent_id: null, is_visible: true, sort_order: 1 },
+        { id: 'c2000000-0000-0000-0000-000000000002', name: 'Art Prints', slug: 'art-prints', description: 'High quality giclée fine art prints', parent_id: null, is_visible: true, sort_order: 2 },
+        { id: 'c3000000-0000-0000-0000-000000000003', name: 'Calendar', slug: 'calendar', description: 'Textured palette aesthetic calendars', parent_id: null, is_visible: true, sort_order: 3 },
+        { id: 'c4000000-0000-0000-0000-000000000004', name: 'Art Products', slug: 'art-products', description: 'Collectible art merchandise and accessories', parent_id: null, is_visible: true, sort_order: 4 }
+      ];
+
+      const seedChildren = [
+        { id: 'b0000000-0000-0000-0000-000000000001', name: 'Bookmarks', slug: 'bookmarks', description: 'Hand-painted cardstock bookmarks', parent_id: 'c4000000-0000-0000-0000-000000000004', is_visible: true, sort_order: 1 },
+        { id: 'b0000000-0000-0000-0000-000000000002', name: 'Stationery', slug: 'stationery', description: 'Aesthetic notebooks, post-it pads & journals', parent_id: 'c4000000-0000-0000-0000-000000000004', is_visible: true, sort_order: 2 },
+        { id: 'b0000000-0000-0000-0000-000000000003', name: 'Fridge Magnets', slug: 'fridge-magnets', description: 'Textured mini canvas magnets', parent_id: 'c4000000-0000-0000-0000-000000000004', is_visible: true, sort_order: 3 },
+        { id: 'b0000000-0000-0000-0000-000000000004', name: 'Stickers', slug: 'stickers', description: 'Waterproof vinyl art stickers', parent_id: 'c4000000-0000-0000-0000-000000000004', is_visible: true, sort_order: 4 },
+        { id: 'b0000000-0000-0000-0000-000000000005', name: 'Badges', slug: 'badges', description: 'Aesthetic enamel & button art pins', parent_id: 'c4000000-0000-0000-0000-000000000004', is_visible: true, sort_order: 5 },
+        { id: 'b0000000-0000-0000-0000-000000000006', name: 'Apparels', slug: 'apparels', description: 'Wearable art apparel & organic totes', parent_id: 'c4000000-0000-0000-0000-000000000004', is_visible: true, sort_order: 6 },
+        { id: 'b0000000-0000-0000-0000-000000000007', name: 'Mugs', slug: 'mugs', description: 'Ceramic art prints & impasto mugs', parent_id: 'c4000000-0000-0000-0000-000000000004', is_visible: true, sort_order: 7 },
+        { id: 'b0000000-0000-0000-0000-000000000008', name: 'Phone Cases', slug: 'phone-cases', description: 'Textured art protective phone covers', parent_id: 'c4000000-0000-0000-0000-000000000004', is_visible: true, sort_order: 8 }
+      ];
+
+      const { error: err1 } = await supabase.from('categories').upsert(seedParents);
+      if (err1) throw err1;
+
+      const { error: err2 } = await supabase.from('categories').upsert(seedChildren);
+      if (err2) throw err2;
+
+      setSuccessMsg('All 12 default categories seeded into database successfully!');
+      await loadCategories();
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to seed categories.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -208,18 +267,37 @@ export default function AdminCategoriesPage() {
               <LayoutGrid className="h-4 w-4 text-accent" />
               Category Tree
             </h2>
-            <button
-              onClick={handleSelectNew}
-              className="h-8 px-3 border border-zinc-800 hover:border-accent text-zinc-500 hover:text-accent font-display text-[9px] uppercase tracking-widest flex items-center gap-1 transition-all rounded"
-            >
-              <Plus className="h-3 w-3" />
-              ADD NEW
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSeedDefaultCategories}
+                disabled={submitting}
+                className="h-8 px-2.5 border border-accent/40 text-accent hover:bg-accent hover:text-black font-display text-[8px] font-bold uppercase tracking-widest transition-all rounded"
+                title="Populate 12 standard art store categories into database"
+              >
+                SEED DEFAULTS
+              </button>
+              <button
+                onClick={handleSelectNew}
+                className="h-8 px-3 border border-zinc-800 hover:border-accent text-zinc-500 hover:text-accent font-display text-[9px] uppercase tracking-widest flex items-center gap-1 transition-all rounded"
+              >
+                <Plus className="h-3 w-3" />
+                ADD NEW
+              </button>
+            </div>
           </div>
 
           {parents.length === 0 ? (
-            <div className="py-12 border border-zinc-900 text-center">
-              <span className="font-display text-[9px] text-zinc-600 tracking-widest uppercase">No categories registered</span>
+            <div className="py-12 border border-zinc-900 text-center space-y-3">
+              <span className="font-display text-[9px] text-zinc-600 tracking-widest uppercase block">No categories registered in database</span>
+              <button
+                type="button"
+                onClick={handleSeedDefaultCategories}
+                disabled={submitting}
+                className="px-4 py-2 bg-accent text-black font-display text-[9px] font-bold uppercase tracking-widest border border-accent hover:bg-transparent hover:text-accent transition-colors"
+              >
+                SEED 12 DEFAULT STORE CATEGORIES
+              </button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -250,7 +328,7 @@ export default function AdminCategoriesPage() {
                           <Edit className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={() => handleDelete(parent.id)}
+                          onClick={() => handleDelete(parent.id, parent.name)}
                           className="text-zinc-500 hover:text-red-500"
                           title="Delete"
                         >
@@ -284,7 +362,7 @@ export default function AdminCategoriesPage() {
                                   <Edit className="h-3 w-3" />
                                 </button>
                                 <button
-                                  onClick={() => handleDelete(sub.id)}
+                                  onClick={() => handleDelete(sub.id, sub.name)}
                                   className="text-zinc-500 hover:text-red-500"
                                   title="Delete"
                                 >

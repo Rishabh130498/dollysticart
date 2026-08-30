@@ -32,18 +32,18 @@ export interface SendBrevoOptions {
  */
 export function getBrevoDefaultSender(): BrevoSender {
   const fromInput = process.env.EMAIL_FROM || process.env.BREVO_SENDER_EMAIL;
-  const defaultSender = { name: 'Dollysticart Studio', email: 'support@dollysticart.com' };
+  const defaultSender = { name: 'Dollysticart', email: 'letsmaildoly@gmail.com' };
   if (!fromInput) return defaultSender;
 
   const match = fromInput.match(/^(.*?)\s*<([^>]+)>$/);
   if (match) {
     return {
-      name: match[1].trim() || 'Dollysticart Studio',
-      email: match[2].trim() || 'support@dollysticart.com',
+      name: match[1].trim() || 'Dollysticart',
+      email: match[2].trim() || 'letsmaildoly@gmail.com',
     };
   }
   if (fromInput.includes('@')) {
-    return { name: 'Dollysticart Studio', email: fromInput.trim() };
+    return { name: 'Dollysticart', email: fromInput.trim() };
   }
   return defaultSender;
 }
@@ -303,14 +303,14 @@ export async function sendInvoiceEmail(order: any, items: any[], pdfBuffer: Buff
     toName: order.customer_name,
     templateId,
     params,
-    subject: `Receipt & Order Confirmation - ${params.ORDER_ID} | Dollysticart Studio`,
+    subject: `Receipt & Order Confirmation - ${params.ORDER_ID} | Dollysticart`,
     htmlContent: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
         
         <!-- Header -->
         <div style="background-color: #09090b; padding: 32px 24px; text-align: center; border-bottom: 3px solid #d97706;">
-          <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 24px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART STUDIO</h1>
-          <p style="color: #a1a1aa; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; margin: 6px 0 0 0;">TEXTURED ARTWORK & CANVAS COLLECTION</p>
+          <h1 style="font-family: Georgia, serif; color: #ffffff; font-size: 24px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">DOLLYSTICART</h1>
+          <p style="color: #a1a1aa; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; margin: 6px 0 0 0;">PREMIUM ARTWORK & SCRIBBLE COLLECTION</p>
         </div>
 
         <!-- Body Content -->
@@ -348,19 +348,19 @@ export async function sendInvoiceEmail(order: any, items: any[], pdfBuffer: Buff
           </div>
 
           <p style="font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 24px;">
-            If you have any questions or custom requests regarding your order, simply reply directly to this email or contact us at <a href="mailto:support@dollysticart.com" style="color: #d97706; text-decoration: underline;">support@dollysticart.com</a>.
+            If you have any questions or custom requests regarding your order, simply reply directly to this email or contact us at <a href="mailto:letsmaildoly@gmail.com" style="color: #d97706; text-decoration: underline;">letsmaildoly@gmail.com</a>.
           </p>
 
           <!-- Signature -->
           <div style="border-top: 1px solid #f3f4f6; pt: 20px; font-size: 13px; color: #374151;">
             <p style="margin: 0; font-weight: bold;">With artistic warmth,</p>
-            <p style="margin: 4px 0 0 0; color: #6b7280;">Dollysticart Studio Team 🎨</p>
+            <p style="margin: 4px 0 0 0; color: #6b7280;">Dollysticart Team 🎨</p>
           </div>
         </div>
 
         <!-- Footer -->
         <div style="background-color: #f9fafb; padding: 20px 24px; text-align: center; border-top: 1px solid #f3f4f6; font-size: 11px; color: #9ca3af;">
-          <p style="margin: 0 0 4px 0;">© ${new Date().getFullYear()} Dollysticart Studio. All rights reserved.</p>
+          <p style="margin: 0 0 4px 0;">© ${new Date().getFullYear()} Dollysticart. All rights reserved.</p>
           <p style="margin: 0;">Sent with ❤️ to ${order.customer_email}</p>
         </div>
       </div>

@@ -1,10 +1,12 @@
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import FormattedPrice from '@/components/common/FormattedPrice';
+import { getProductCardImageUrl } from '@/lib/utils/image-helpers';
 import ProductCarousel from '@/components/product/ProductCarousel';
 
 // 1. Editorial Blueprint Placeholder
@@ -53,7 +55,11 @@ function BlankPlaceholder({ ratio, label, imageUrl, hideText = false }: { ratio:
   );
 }
 
-// 2. Price Formatter
+// 2. Price Formatter & Image Resolver Helpers
+function getImgUrl(product: any): string | undefined {
+  return getProductCardImageUrl(product);
+}
+
 function formatPrice(paise: number) {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -77,20 +83,22 @@ export default async function Home() {
       .order('sort_order', { ascending: true });
     sections = (secData || []).filter(sec => !sec.type.endsWith('_page'));
 
-    // Fetch live products for carousel
+    // Fetch live products for carousel and homepage sections (prioritize featured products first with LEFT JOIN)
     const { data: prodData } = await supabase
       .from('products')
-      .select('*, categories(name), product_images(image_url)')
-      .eq('status', 'published')
+      .select('*, categories!left(name), product_images!left(storage_path, is_primary)')
+      .neq('status', 'archived')
+      .order('featured', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(12);
+
     dbProducts = prodData || [];
   } catch (error) {
     console.error('Error fetching homepage databases:', error);
   }
 
   // Fallback defaults matching Kith campaign structures
-  const displaySections = sections.length > 0 ? sections : [
+  let displaySections = sections.length > 0 ? sections : [
     {
       id: 'sec-hero-1',
       type: 'banner',
@@ -121,8 +129,19 @@ export default async function Home() {
       id: 'sec-swiper-1',
       type: 'product_swiper',
       content: {
-        heading: 'LATEST RELEASES',
+        heading: 'FEATURED & LATEST RELEASES',
         limit: 10
+      }
+    },
+    {
+      id: 'sec-featured-1',
+      type: 'featured_products',
+      content: {
+        heading: 'FEATURED STUDIO EDITIONS',
+        description: 'Handpicked original textured artworks & featured prints.',
+        cta_text: 'EXPLORE ALL',
+        cta_link: '/shop',
+        label: 'CURATED SELECTION'
       }
     },
     {
@@ -139,6 +158,19 @@ export default async function Home() {
       }
     }
   ];
+
+  // Guarantee product swiper section exists so products are ALWAYS displayed on homepage
+  const hasProductSection = displaySections.some(sec => ['product_swiper', 'featured_products', 'product_grid'].includes(sec.type));
+  if (!hasProductSection) {
+    displaySections.push({
+      id: 'sec-auto-swiper',
+      type: 'product_swiper',
+      content: {
+        heading: 'FEATURED & LATEST RELEASES',
+        limit: 10
+      }
+    });
+  }
 
   // Carousel product source
   const productsList = dbProducts.length > 0 ? dbProducts : [
@@ -221,7 +253,8 @@ export default async function Home() {
 
           // 3. FEATURED PRODUCTS LAYOUT
           case 'featured_products':
-            const featuredProducts = dbProducts.slice(0, 4);
+            const featuredItems = dbProducts.filter((p: any) => p.featured);
+            const featuredProducts = featuredItems.length >= 4 ? featuredItems.slice(0, 4) : dbProducts.slice(0, 4);
             return (
               <section key={section.id} className="w-full px-4 sm:px-6 py-12 md:py-16">
                 <div className="flex flex-col lg:flex-row gap-6">
@@ -257,9 +290,9 @@ export default async function Home() {
                         className="group flex flex-col space-y-3 grayscale-card border border-zinc-900 bg-[#060607] p-3 transition-colors hover:border-zinc-800"
                       >
                         <div className="relative aspect-[4/5] w-full bg-[#0c0c0e] overflow-hidden flex items-center justify-center">
-                          {product.product_images?.[0]?.image_url ? (
+                          {getImgUrl(product) ? (
                             <img
-                              src={product.product_images[0].image_url}
+                              src={getImgUrl(product)}
                               alt={product.name}
                               className="w-full h-full object-cover transition-all duration-500"
                             />
@@ -366,8 +399,8 @@ export default async function Home() {
                       className="group flex flex-col space-y-3 grayscale-card border border-zinc-900 bg-[#060607] p-3 transition-colors hover:border-zinc-800"
                     >
                       <div className="relative aspect-[4/5] w-full bg-[#0c0c0e] overflow-hidden flex items-center justify-center">
-                        {product.product_images?.[0]?.image_url ? (
-                          <img src={product.product_images[0].image_url} alt={product.name} className="w-full h-full object-cover transition-all duration-500" />
+                        {getImgUrl(product) ? (
+                          <img src={getImgUrl(product)} alt={product.name} className="w-full h-full object-cover transition-all duration-500" />
                         ) : (
                           <span className="font-display text-[9px] tracking-wider text-zinc-600 uppercase">NO IMAGE</span>
                         )}

@@ -27,6 +27,11 @@ export default function AdminShopDashboard() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isAdmin, setIsAdmin] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [targetCatId, setTargetCatId] = useState<string>('uncategorized');
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkStatusMsg, setBulkStatusMsg] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
 
@@ -64,7 +69,14 @@ export default function AdminShopDashboard() {
 
       setIsAdmin(true);
 
-      // 1. Fetch products list
+      // 1. Fetch categories for bulk action dropdown
+      const { data: catData } = await supabase
+        .from('categories')
+        .select('id, name')
+        .order('sort_order', { ascending: true });
+      setCategories(catData || []);
+
+      // 2. Fetch products list
       const { data: prodData, error: prodErr } = await supabase
         .from('products')
         .select('*, categories(name)')
@@ -201,6 +213,48 @@ export default function AdminShopDashboard() {
     } catch (e) {
       console.error(e);
       alert('Failed to archive product.');
+    }
+  };
+
+  // Bulk selection helper handlers
+  const handleToggleSelectAll = (filteredItems: any[]) => {
+    if (selectedIds.length === filteredItems.length && filteredItems.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredItems.map(item => item.id));
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkCategoryAssign = async () => {
+    if (selectedIds.length === 0) return;
+    setBulkUpdating(true);
+    setBulkStatusMsg('');
+    try {
+      const categoryIdVal = targetCatId === 'uncategorized' ? null : targetCatId;
+      const { error } = await supabase
+        .from('products')
+        .update({ category_id: categoryIdVal })
+        .in('id', selectedIds);
+
+      if (error) throw error;
+
+      const targetCatObj = categories.find(c => c.id === targetCatId);
+      const catLabel = targetCatId === 'uncategorized' ? 'Uncategorized' : (targetCatObj?.name || 'Selected Category');
+
+      setBulkStatusMsg(`Successfully assigned ${selectedIds.length} product(s) to "${catLabel}".`);
+      setSelectedIds([]);
+      await loadDashboardData();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to assign category to selected products.');
+    } finally {
+      setBulkUpdating(false);
     }
   };
 
@@ -350,6 +404,48 @@ export default function AdminShopDashboard() {
           </div>
         </div>
 
+        {/* Bulk Action Notification */}
+        {bulkStatusMsg && (
+          <div className="p-3 border border-green-500/20 bg-green-500/5 text-green-500 font-sans text-xs flex items-center justify-between">
+            <span>{bulkStatusMsg}</span>
+            <button onClick={() => setBulkStatusMsg('')} className="text-zinc-500 hover:text-white text-xs">✕</button>
+          </div>
+        )}
+
+        {/* Bulk Actions Bar */}
+        {selectedIds.length > 0 && (
+          <div className="bg-[#0c0c0e] border border-accent/40 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-accent" />
+              <span className="font-display text-xs font-bold uppercase tracking-wider text-foreground">
+                {selectedIds.length} Product(s) Selected
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <span className="font-display text-[9px] uppercase tracking-widest text-muted hidden sm:inline">Assign Category:</span>
+              <select
+                value={targetCatId}
+                onChange={(e) => setTargetCatId(e.target.value)}
+                className="h-9 border border-zinc-800 bg-background px-3 font-display text-xs tracking-wider text-foreground focus:border-accent focus:outline-none transition-colors"
+              >
+                <option value="uncategorized">Uncategorized (Clear Category)</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+
+              <button
+                onClick={handleBulkCategoryAssign}
+                disabled={bulkUpdating}
+                className="h-9 px-4 bg-accent text-black font-display text-[9px] font-bold uppercase tracking-widest border border-accent hover:bg-transparent hover:text-accent transition-colors disabled:opacity-50 cursor-pointer shrink-0"
+              >
+                {bulkUpdating ? 'UPDATING...' : 'APPLY BULK CATEGORY'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Table list view */}
         {filteredProducts.length === 0 ? (
           <div className="py-20 text-center border border-dashed border-zinc-900">
@@ -360,6 +456,14 @@ export default function AdminShopDashboard() {
             <table className="w-full text-left font-sans text-xs">
               <thead>
                 <tr className="border-b border-border-subtle font-display text-[9px] uppercase tracking-widest text-muted bg-black/40">
+                  <th className="p-4 sm:p-5 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === filteredProducts.length && filteredProducts.length > 0}
+                      onChange={() => handleToggleSelectAll(filteredProducts)}
+                      className="h-4 w-4 rounded border-zinc-800 bg-background text-accent focus:ring-accent cursor-pointer"
+                    />
+                  </th>
                   <th className="p-4 sm:p-5">Product Details</th>
                   <th className="p-4 sm:p-5">Category</th>
                   <th className="p-4 sm:p-5">Unit Price</th>
@@ -368,15 +472,26 @@ export default function AdminShopDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle">
-                {filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-zinc-950/40 transition-colors">
-                    {/* Name detail */}
-                    <td className="p-4 sm:p-5">
-                      <div className="font-display text-xs font-bold uppercase tracking-wider text-foreground">
-                        {product.name}
-                      </div>
-                      <span className="font-mono text-[9px] text-zinc-600 block mt-0.5">{product.slug}</span>
-                    </td>
+                {filteredProducts.map((product) => {
+                  const isSelected = selectedIds.includes(product.id);
+                  return (
+                    <tr key={product.id} className={`transition-colors ${isSelected ? 'bg-accent/5' : 'hover:bg-zinc-950/40'}`}>
+                      <td className="p-4 sm:p-5 w-10">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(product.id)}
+                          className="h-4 w-4 rounded border-zinc-800 bg-background text-accent focus:ring-accent cursor-pointer"
+                        />
+                      </td>
+
+                      {/* Name detail */}
+                      <td className="p-4 sm:p-5">
+                        <div className="font-display text-xs font-bold uppercase tracking-wider text-foreground">
+                          {product.name}
+                        </div>
+                        <span className="font-mono text-[9px] text-zinc-600 block mt-0.5">{product.slug}</span>
+                      </td>
 
                     {/* Category */}
                     <td className="p-4 sm:p-5 text-muted">
@@ -437,8 +552,9 @@ export default function AdminShopDashboard() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                );
+              })}
+            </tbody>
             </table>
           </div>
         )}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Trash2, ShoppingBag, ArrowRight, Minus, Plus, ShieldCheck, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { getProductCardImageUrl } from '@/lib/utils/image-helpers';
 
 // Price Formatter Helper
 function formatPrice(paise: number) {
@@ -24,6 +25,27 @@ function CartThumbPlaceholder({ label }: { label: string }) {
       </span>
     </div>
   );
+}
+
+// Cart Item Thumbnail Component with Fallback
+function CartItemImage({ src, label }: { src?: string; label: string }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (src && !imageError) {
+    return (
+      <div className="w-12 h-16 bg-[#0c0c0e] border border-zinc-900 relative overflow-hidden select-none shrink-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={label}
+          className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
+        />
+      </div>
+    );
+  }
+
+  return <CartThumbPlaceholder label={label} />;
 }
 
 export default function CartPage() {
@@ -81,10 +103,10 @@ export default function CartPage() {
         window.dispatchEvent(new Event('cart-updated'));
       }
 
-      // 2. Fetch all cart items from DB
+      // 2. Fetch all cart items from DB with product details and images
       const { data: dbItems, error } = await supabase
         .from('cart_items')
-        .select('*, products(*, categories(name))')
+        .select('*, products(*, categories(name), product_images(storage_path, is_primary, sort_order))')
         .eq('user_id', currentUser.id);
 
       if (error) {
@@ -93,17 +115,47 @@ export default function CartPage() {
         const formatted = (dbItems || []).map((item: any) => ({
           id: item.id, // DB cart item id
           productId: item.product_id,
-          name: item.products.name,
-          slug: item.products.slug,
+          name: item.products?.name,
+          slug: item.products?.slug,
           quantity: item.quantity,
-          regular_price: item.products.regular_price,
-          discounted_price: item.products.discounted_price,
-          category_name: item.products.categories?.name || 'Uncategorized'
+          regular_price: item.products?.regular_price,
+          discounted_price: item.products?.discounted_price,
+          category_name: item.products?.categories?.name || 'Uncategorized',
+          image_url: getProductCardImageUrl(item.products)
         }));
         setCartItems(formatted);
       }
     } else {
-      // 3. Guest user: Use LocalStorage
+      // 3. Guest user: Use LocalStorage, fetch missing product images if needed
+      if (localItems.length > 0) {
+        const missingImgProductIds = localItems
+          .filter((i: any) => !i.image_url)
+          .map((i: any) => i.productId);
+        
+        if (missingImgProductIds.length > 0) {
+          try {
+            const { data: prodData } = await supabase
+              .from('products')
+              .select('id, product_images(storage_path, is_primary, sort_order)')
+              .in('id', missingImgProductIds);
+
+            if (prodData && prodData.length > 0) {
+              const imgMap = new Map<string, string>();
+              prodData.forEach((p: any) => {
+                const img = getProductCardImageUrl(p);
+                if (img) imgMap.set(p.id, img);
+              });
+
+              localItems = localItems.map((item: any) => ({
+                ...item,
+                image_url: item.image_url || imgMap.get(item.productId)
+              }));
+            }
+          } catch (e) {
+            console.error('Error fetching guest product images', e);
+          }
+        }
+      }
       setCartItems(localItems);
     }
     
@@ -230,7 +282,7 @@ export default function CartPage() {
                   <div key={item.productId} className="flex p-4 sm:p-6 gap-4 sm:gap-6 items-center">
                     
                     {/* Thumbnail */}
-                    <CartThumbPlaceholder label={item.name} />
+                    <CartItemImage src={item.image_url} label={item.name} />
 
                     {/* Product details info */}
                     <div className="flex-1 min-w-0">
@@ -299,12 +351,12 @@ export default function CartPage() {
             </div>
 
             {/* Price Integrity security assurance alert */}
-            <div className="flex gap-3 border border-accent/20 bg-accent/5 p-4 text-accent">
-              <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="group flex gap-3 border border-zinc-800 bg-[#0c0c0e] p-4 text-zinc-400 hover:bg-accent hover:border-accent hover:text-black transition-all duration-300">
+              <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5 text-zinc-400 group-hover:text-black transition-colors" />
               <div className="space-y-1 font-sans text-xs">
-                <h4 className="font-display text-[9px] uppercase tracking-widest font-bold">Encrypted Pricing Security Active</h4>
-                <p className="text-[11px] text-accent/80 leading-relaxed">
-                  To protect database integrity, we do not accept checkout totals from the client browser. When clicking Checkout, our server will directly query active Supabase inventory records to calculate secure billing.
+                <h4 className="font-display text-[9px] uppercase tracking-widest font-bold text-zinc-400 group-hover:text-black transition-colors">Encrypted Pricing Security Active</h4>
+                <p className="text-[11px] text-zinc-400 group-hover:text-black leading-relaxed transition-colors">
+                  To protect pricing integrity, we do not accept checkout totals from the client browser. When clicking Checkout, our server directly verifies active catalog records to calculate secure billing.
                 </p>
               </div>
             </div>

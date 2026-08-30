@@ -3,8 +3,10 @@ import Link from 'next/link';
 import { ChevronRight, Filter, Grid, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import FormattedPrice from '@/components/common/FormattedPrice';
+import { getProductCardImageUrl } from '@/lib/utils/image-helpers';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Price Formatter Helper
 function formatPrice(paise: number) {
@@ -20,14 +22,15 @@ function BlankPlaceholder({ label, imageUrl }: { label: string; imageUrl?: strin
   return (
     <div className="w-full aspect-[3/4] bg-[#0c0c0e] flex flex-col items-center justify-center p-4 relative group overflow-hidden">
       {imageUrl ? (
-        <div className="absolute inset-0 z-0">
+        <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src={imageUrl} 
             alt={label} 
-            className="w-full h-full object-cover transition-all duration-500" 
+            className="absolute inset-0 w-full h-full object-cover z-10 transition-transform duration-700 group-hover:scale-105" 
           />
-        </div>
+          <div className="absolute inset-0 z-20 bg-zinc-950/10 group-hover:bg-zinc-950/0 transition-colors pointer-events-none" />
+        </>
       ) : (
         <>
           {/* Editorial Grid Lines */}
@@ -45,11 +48,9 @@ function BlankPlaceholder({ label, imageUrl }: { label: string; imageUrl?: strin
           <span className="font-mono text-[8px] text-zinc-700 uppercase tracking-widest mt-1">
             3:4 ARTWORK
           </span>
+          <div className="absolute inset-0 bg-zinc-950/20 group-hover:bg-zinc-950/0 pointer-events-none" />
         </>
       )}
-      
-      {/* Grayscale hover background transition */}
-      <div className="absolute inset-0 bg-zinc-950/20 grayscale-card-img group-hover:bg-zinc-950/0 pointer-events-none" />
     </div>
   );
 }
@@ -120,11 +121,11 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
     
     dbCategories = categoriesData || [];
 
-    // Fetch products
+    // Fetch products (using LEFT JOIN so uncategorized products are not filtered out)
     let query = supabase
       .from('products')
-      .select('*, categories(name), product_images(image_url)')
-      .eq('status', 'published');
+      .select('*, categories!left(name), product_images!left(storage_path, is_primary)')
+      .neq('status', 'archived');
     
     const { data: productsData } = await query;
     dbProducts = productsData || [];
@@ -376,7 +377,7 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
                   {/* Aspect Ratio 3:4 Box */}
                   <BlankPlaceholder 
                     label={product.name} 
-                    imageUrl={product.product_images?.[0]?.image_url} 
+                    imageUrl={getProductCardImageUrl(product)} 
                   />
 
                   {/* Info details */}

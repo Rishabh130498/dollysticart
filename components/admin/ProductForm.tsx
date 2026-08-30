@@ -19,7 +19,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [discountPrice, setDiscountPrice] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [featured, setFeatured] = useState(false);
-  const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
+  const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('published');
   
   const [categories, setCategories] = useState<any[]>([]);
   const [images, setImages] = useState<any[]>([]);
