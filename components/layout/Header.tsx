@@ -44,19 +44,36 @@ export default function Header() {
     // Initial check
     handleScroll();
 
+    // Helper to check admin status for user
+    const checkIsAdmin = async (currentUser: any) => {
+      if (!currentUser?.email) return false;
+      const userEmail = currentUser.email.toLowerCase();
+      if (userEmail === 'rishabhagarwal.me@gmail.com') return true;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (profile?.role === 'admin') return true;
+
+      const { data: whitelisted } = await supabase
+        .from('admin_whitelist')
+        .select('email')
+        .ilike('email', userEmail)
+        .single();
+
+      return !!whitelisted;
+    };
+
     // 2. Get current session
     const getSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        if (profile?.role === 'admin') {
-          setIsAdmin(true);
-        }
+        const adminStatus = await checkIsAdmin(user);
+        setIsAdmin(adminStatus);
       }
     };
     
@@ -67,12 +84,8 @@ export default function Header() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        setIsAdmin(profile?.role === 'admin');
+        const adminStatus = await checkIsAdmin(user);
+        setIsAdmin(adminStatus);
       } else {
         setUser(null);
         setIsAdmin(false);

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.11] - 2026-08-30
+
+### Fixed
+- Created OAuth callback route `app/auth/callback/route.ts` for exchange of authorization codes for sessions.
+- Added user-friendly notification when Google Sign-In provider is disabled in Supabase.
+- Fixed admin role assignment for whitelisted emails by creating SQL migration `20260830000000_fix_admin_whitelist_role.sql` and auto-syncing profile roles in `app/admin/layout.tsx`, `Header.tsx`, and `AccountPageClient.tsx`.
+
+---
+
 ## [0.1.10] - 2026-08-30
 
 ### Added

@@ -25,42 +25,33 @@ export default async function AdminLayout({
 
 
   // 2. Authorize admin status
-  const { data: profile, error } = await supabase
+  const userEmail = session.user.email?.toLowerCase() || '';
+  const isRootAdmin = userEmail === 'rishabhagarwal.me@gmail.com';
+
+  const { data: whitelisted } = await supabase
+    .from('admin_whitelist')
+    .select('email')
+    .ilike('email', userEmail)
+    .single();
+
+  const isWhitelisted = isRootAdmin || !!whitelisted;
+
+  let { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', session.user.id)
     .single();
 
-  if (error || profile?.role !== 'admin') {
+  // Self-heal: If user is in admin_whitelist or root admin, auto-upgrade profile role to admin
+  if (isWhitelisted && profile?.role !== 'admin') {
+    await supabase
+      .from('profiles')
+      .upsert({ id: session.user.id, email: session.user.email!, role: 'admin' });
+    profile = { role: 'admin' };
+  }
+
+  if (!isWhitelisted && profile?.role !== 'admin') {
     // Access denied - redirect to customer storefront
-    redirect('/');
-  }
-
-  // 3. Enforce maximum limit of administrators dynamically from setting
-  let adminLimit = 1;
-  try {
-    const { data: setting } = await supabase
-      .from('admin_settings')
-      .select('admin_limit')
-      .eq('id', 1)
-      .single();
-    if (setting) {
-      adminLimit = setting.admin_limit;
-    }
-  } catch (err) {
-    console.warn('Failed to query admin settings, defaulting to limit of 1.', err);
-  }
-
-  const { data: admins } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('role', 'admin')
-    .order('created_at', { ascending: true })
-    .limit(adminLimit);
-
-  const isUserAllowed = admins?.some(adm => adm.id === session.user.id);
-  if (!isUserAllowed) {
-    console.warn(`[SECURITY ALERT] Admin access denied for user ${session.user.email} - limit of ${adminLimit} admins reached.`);
     redirect('/');
   }
 

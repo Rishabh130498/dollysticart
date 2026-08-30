@@ -48,13 +48,32 @@ export default function AccountPageClient() {
     setUser(currentUser);
     if (currentUser) {
       try {
+        const userEmail = currentUser.email?.toLowerCase() || '';
+        const isRootAdmin = userEmail === 'rishabhagarwal.me@gmail.com';
+
+        const { data: whitelisted } = await supabase
+          .from('admin_whitelist')
+          .select('email')
+          .ilike('email', userEmail)
+          .single();
+
+        const isWhitelisted = isRootAdmin || !!whitelisted;
+
         // 1. Load profile details
-        const { data: prof } = await supabase
+        let { data: prof } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', currentUser.id)
           .single();
-        setProfile(prof);
+
+        if (isWhitelisted && prof?.role !== 'admin') {
+          await supabase
+            .from('profiles')
+            .upsert({ id: currentUser.id, email: currentUser.email, role: 'admin' });
+          prof = { ...(prof || {}), role: 'admin' };
+        }
+
+        setProfile(prof || { role: isWhitelisted ? 'admin' : 'customer' });
 
         // 2. Load order history
         const { data: ords } = await supabase
@@ -164,7 +183,12 @@ export default function AccountPageClient() {
       });
       if (error) throw error;
     } catch (err: any) {
-      setAuthError(err.message || 'OAuth initiation failed.');
+      const msg = err?.message || err?.msg || '';
+      if (msg.includes('provider is not enabled') || err?.error_code === 'validation_failed') {
+        setAuthError('Google Sign-In is not enabled yet in your Supabase project settings. Please enable the Google OAuth provider in Supabase Dashboard (Authentication > Providers > Google).');
+      } else {
+        setAuthError(msg || 'Google Sign-In initiation failed.');
+      }
     }
   };
 
