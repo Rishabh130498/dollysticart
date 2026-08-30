@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import FormattedPrice from '@/components/common/FormattedPrice';
+import ProductCarousel from '@/components/product/ProductCarousel';
 
 // 1. Editorial Blueprint Placeholder
 function BlankPlaceholder({ ratio, label, imageUrl, hideText = false }: { ratio: string; label: string; imageUrl?: string; hideText?: boolean }) {
@@ -492,65 +493,12 @@ export default async function Home() {
             const swiperLimit = content.limit || 10;
             const swiperProducts = productsList.slice(0, swiperLimit);
             return (
-              <section key={section.id} className="w-full px-4 sm:px-6 py-12 md:py-16">
-                <div className="flex justify-between items-end mb-6 md:mb-8">
-                  <h3 className="font-display text-[10px] font-extrabold uppercase tracking-[0.25em] text-foreground/55">
-                    {content.heading || 'LATEST RELEASES'}
-                  </h3>
-                  <Link
-                    href="/shop"
-                    className="font-display text-[9px] font-bold uppercase tracking-widest text-muted hover:text-accent border-b border-zinc-900 pb-0.5 transition-colors"
-                  >
-                    VIEW ALL
-                  </Link>
-                </div>
-
-                {/* Horizontal swiper container */}
-                <div className="kith-swiper w-full gap-4 pb-4">
-                  {swiperProducts.map((product: any) => (
-                    <Link
-                      key={product.id}
-                      href={`/product/${product.slug}`}
-                      className="kith-swiper-item w-[68%] sm:w-[45%] md:w-[28%] lg:w-[19.2%] group flex flex-col space-y-3.5 grayscale-card"
-                    >
-                      {/* Image Container aspect-ratio 4:5 */}
-                      <div className="overflow-hidden bg-[#0c0c0e]">
-                        <BlankPlaceholder ratio="aspect-[4/5]" label={product.name} imageUrl={product.product_images?.[0]?.image_url} />
-                      </div>
-                      
-                      {/* Product Info left-aligned, font-georgia */}
-                      <div className="flex flex-col space-y-1 items-start text-left px-3.5 pb-3.5">
-                        <span className="font-display text-[8px] uppercase tracking-widest text-zinc-600">
-                          {product.categories?.name || 'Art Release'}
-                        </span>
-                        
-                        {/* Product Name in Georgia */}
-                        <h4 className="font-georgia text-[12px] italic tracking-wide text-foreground group-hover:text-accent transition-colors leading-tight line-clamp-1">
-                          {product.name}
-                        </h4>
-                        
-                        {/* Price */}
-                        <div className="flex items-center space-x-2.5 pt-0.5 font-mono text-[10px]">
-                          {product.discounted_price ? (
-                            <>
-                              <span className="text-zinc-600 line-through">
-                                <FormattedPrice amountInPaise={product.regular_price} />
-                              </span>
-                              <span className="text-foreground font-semibold">
-                                <FormattedPrice amountInPaise={product.discounted_price} />
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-foreground">
-                              <FormattedPrice amountInPaise={product.regular_price} />
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </section>
+              <div key={section.id} className="w-full">
+                <ProductCarousel 
+                  products={swiperProducts} 
+                  heading={content.heading || 'LATEST RELEASES'} 
+                />
+              </div>
             );
 
           default:

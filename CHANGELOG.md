@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] - 2026-08-30
+
+### Added
+- Added interactive **Image Crop Tool** (`components/admin/ImageCropModal.tsx`) with locked aspect ratio frames matching layout requirements.
+- Integrated auto-playing **Product Carousel** (`components/product/ProductCarousel.tsx`) for `LATEST RELEASES` section with hover-pause, pagination indicators, and custom top spacing.
+- Added recommended dimension pixel badges (e.g., `1920 × 960 px`) across image dropzones.
+
+### Fixed
+- Prominent standalone top-right action buttons (Upload ⬆️ and Delete 🗑️) without common container boxes.
+- Resolved browser CORS canvas tainting (`toBlob`) by adding `crossOrigin="anonymous"` and local Blob pre-fetching.
+- Fixed carousel top hover highlight border clipping with vertical padding clearance.
+- Configured auto-closing of dialog and image source picker overlays upon upload completion.
+
+---
+
 ## [0.1.11] - 2026-08-30
 
 ### Fixed

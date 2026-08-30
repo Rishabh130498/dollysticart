@@ -985,8 +985,8 @@ export default function ElementorHomepageEditor() {
                           )}
 
                           {/* Centered Campaign Content details */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent flex flex-col justify-end items-center text-center p-8 sm:p-12 md:p-16 space-y-3 sm:space-y-4">
-                            <h2 className="font-display text-xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-[0.15em] text-foreground max-w-3xl leading-none">
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent flex flex-col justify-end items-center text-center p-8 sm:p-12 md:p-16 space-y-3 sm:space-y-4 pointer-events-none">
+                            <h2 className="font-display text-xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-[0.15em] text-foreground max-w-3xl leading-none pointer-events-auto">
                               {editMode ? (
                                 <InlineText
                                   value={content.heading || 'HERO HEADING'}
@@ -999,7 +999,7 @@ export default function ElementorHomepageEditor() {
                               )}
                             </h2>
 
-                            <p className="font-sans text-[10px] sm:text-xs text-foreground/80 max-w-md tracking-wider leading-relaxed">
+                            <p className="font-sans text-[10px] sm:text-xs text-foreground/80 max-w-md tracking-wider leading-relaxed pointer-events-auto">
                               {editMode ? (
                                 <InlineText
                                   value={content.description || 'Campaign description details...'}
@@ -1013,7 +1013,7 @@ export default function ElementorHomepageEditor() {
                               )}
                             </p>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 pointer-events-auto">
                               <span className="btn-kith-outline mt-2 opacity-50 select-none">
                                 {content.cta_text || 'DISCOVER'}
                               </span>

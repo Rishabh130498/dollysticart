@@ -3,6 +3,37 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import ImageCropModal from '@/components/admin/ImageCropModal';
+
+// --- HELPER TO PARSE RATIO AND RECOMMENDED PIXEL DIMENSIONS ---
+export function getAspectDetails(ratioClass: string = 'aspect-[2/1]'): { aspect: number; px: string; label: string } {
+  if (ratioClass.includes('2/1') || ratioClass.includes('2-1')) {
+    return { aspect: 2 / 1, px: '1920 × 960 px', label: '2:1 Banner' };
+  }
+  if (ratioClass.includes('16/9') || ratioClass.includes('16-9')) {
+    return { aspect: 16 / 9, px: '1920 × 1080 px', label: '16:9 Landscape' };
+  }
+  if (ratioClass.includes('5/7') || ratioClass.includes('5-7')) {
+    return { aspect: 5 / 7, px: '850 × 1190 px', label: '5:7 Portrait' };
+  }
+  if (ratioClass.includes('4/5') || ratioClass.includes('4-5')) {
+    return { aspect: 4 / 5, px: '1000 × 1250 px', label: '4:5 Card' };
+  }
+  if (ratioClass.includes('square') || ratioClass.includes('1/1') || ratioClass.includes('1-1')) {
+    return { aspect: 1 / 1, px: '1000 × 1000 px', label: '1:1 Square' };
+  }
+  const match = ratioClass.match(/aspect-\[(\d+)\/(\d+)\]/);
+  if (match) {
+    const w = parseInt(match[1], 10);
+    const h = parseInt(match[2], 10);
+    if (w && h) {
+      const baseWidth = w >= h ? 1920 : 1000;
+      const calcHeight = Math.round((baseWidth / w) * h);
+      return { aspect: w / h, px: `${baseWidth} × ${calcHeight} px`, label: `${w}:${h}` };
+    }
+  }
+  return { aspect: 2 / 1, px: '1920 × 960 px', label: '2:1 Banner' };
+}
 
 // --- SUB-COMPONENT: SUPABASE DATABASE ASSET PICKER ---
 function DatabasePicker({ 
@@ -144,9 +175,11 @@ export default function ImageDropzone({
   const [showDatabasePicker, setShowDatabasePicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isSharedWarning, setIsSharedWarning] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  const aspectDetails = getAspectDetails(ratioClass);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -158,12 +191,16 @@ export default function ImageDropzone({
     }
   };
 
-  const uploadFile = async (file: File) => {
+  // Upload cropped blob file to Supabase storage
+  const uploadCroppedBlob = async (blob: Blob) => {
     setUploading(true);
+    setCropImageSrc(null);
+    setShowOptions(false);
+    setShowDatabasePicker(false);
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `cms-${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`;
-      
+      const filePath = `cms-${Date.now()}-${Math.floor(Math.random() * 1000)}.jpg`;
+      const file = new File([blob], filePath, { type: 'image/jpeg' });
+
       const { error: uploadError } = await supabase.storage
         .from('products')
         .upload(filePath, file);
@@ -177,10 +214,25 @@ export default function ImageDropzone({
       onUploadSuccess(publicUrl);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'Image upload failed. Verify storage rules.');
+      alert(err.message || 'Cropped image upload failed. Verify storage rules.');
     } finally {
       setUploading(false);
+      setShowOptions(false);
+      setShowDatabasePicker(false);
     }
+  };
+
+  // Handle local computer file selection -> Open Crop Modal
+  const processSelectedFile = (file: File) => {
+    setShowOptions(false);
+    setShowDatabasePicker(false);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result) {
+        setCropImageSrc(reader.result.toString());
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDrop = async (e: React.DragEvent) => {
@@ -189,13 +241,13 @@ export default function ImageDropzone({
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      await uploadFile(e.dataTransfer.files[0]);
+      processSelectedFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      await uploadFile(e.target.files[0]);
+      processSelectedFile(e.target.files[0]);
     }
   };
 
@@ -302,40 +354,49 @@ export default function ImageDropzone({
         </div>
       )}
 
+      {/* Recommended Dimension Pixel Badge (Pinned Bottom-Left) */}
+      <div className="absolute bottom-2.5 left-2.5 z-25 px-2 py-0.5 bg-black/85 border border-zinc-800 rounded text-accent font-mono text-[8px] font-bold uppercase tracking-wider backdrop-blur-sm pointer-events-none">
+        {aspectDetails.px}
+      </div>
+
       {/* Controls Overlay in Top-Right Corner */}
-      <div className="absolute top-2 right-2 z-25 flex items-center space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      <div className="absolute top-3 right-3 z-35 flex items-center space-x-2">
         {/* Upload Trigger Button */}
         <button
+          type="button"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setShowOptions(true);
           }}
-          className="p-1.5 bg-black/85 border border-zinc-800 text-zinc-400 hover:text-blue-500 hover:border-blue-900/50 rounded transition-colors cursor-pointer"
+          className="p-2 bg-black/90 hover:bg-accent border border-zinc-800 hover:border-accent text-accent hover:text-black rounded-lg transition-all duration-200 cursor-pointer shadow-2xl backdrop-blur-md flex items-center justify-center"
           title="Upload or Choose Image"
         >
-          <Upload className={`h-3.5 w-3.5 ${uploading ? 'animate-bounce text-blue-500' : ''}`} />
+          <Upload className={`h-4 w-4 ${uploading ? 'animate-bounce' : ''}`} />
         </button>
 
         {/* Delete/Remove Trigger Button */}
         {imageUrl && (
           <button
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               triggerDelete();
             }}
-            className="p-1.5 bg-black/85 border border-zinc-800 text-zinc-400 hover:text-red-500 hover:border-red-900/50 rounded transition-colors cursor-pointer"
+            className="p-2 bg-black/90 hover:bg-red-600 border border-zinc-800 hover:border-red-500 text-red-400 hover:text-white rounded-lg transition-all duration-200 cursor-pointer shadow-2xl backdrop-blur-md flex items-center justify-center"
             title="Remove Image"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-4 w-4" />
           </button>
         )}
       </div>
 
       {!imageUrl && !uploading && (
         <div className="z-1 flex flex-col items-center space-y-1">
-          <span className="font-mono text-[7px] text-zinc-700 uppercase tracking-widest hidden md:block [.viewport-mobile_&]:hidden">NO IMAGE CONFIGURED</span>
+          <span className="font-mono text-[8px] text-zinc-400 uppercase tracking-widest font-bold">
+            NO IMAGE CONFIGURED &bull; {aspectDetails.px}
+          </span>
         </div>
       )}
 
@@ -348,7 +409,9 @@ export default function ImageDropzone({
             e.stopPropagation();
           }}
         >
-          <h4 className="font-display text-[9px] font-extrabold uppercase tracking-widest text-accent">Select Image Source</h4>
+          <h4 className="font-display text-[9px] font-extrabold uppercase tracking-widest text-accent">
+            Select Image Source ({aspectDetails.px})
+          </h4>
           <div className="flex flex-col space-y-2 w-full max-w-[180px]">
             <button
               onClick={(e) => {
@@ -444,10 +507,29 @@ export default function ImageDropzone({
         <DatabasePicker
           supabase={supabase}
           onClose={() => setShowDatabasePicker(false)}
-          onSelect={(url) => {
-            onUploadSuccess(url);
+          onSelect={async (url) => {
             setShowDatabasePicker(false);
+            try {
+              const res = await fetch(url);
+              const blob = await res.blob();
+              const objectUrl = URL.createObjectURL(blob);
+              setCropImageSrc(objectUrl);
+            } catch (e) {
+              console.warn('Failed to pre-fetch asset blob, opening raw URL:', e);
+              setCropImageSrc(url);
+            }
           }}
+        />
+      )}
+
+      {/* Interactive Crop Modal */}
+      {cropImageSrc && (
+        <ImageCropModal
+          imageSrc={cropImageSrc}
+          aspectRatio={aspectDetails.aspect}
+          recommendedPx={aspectDetails.px}
+          onConfirm={uploadCroppedBlob}
+          onCancel={() => setCropImageSrc(null)}
         />
       )}
     </div>
