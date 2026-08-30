@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Lock, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import FormattedText from '@/components/common/FormattedText';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -83,35 +84,35 @@ export default async function PrivacyPage() {
           <h2 className="font-display text-base font-bold uppercase tracking-wider text-foreground">
             {content.section_1_title}
           </h2>
-          <p>{content.section_1_body}</p>
+          <FormattedText text={content.section_1_body} />
         </div>
 
         <div className="space-y-3 border-b border-zinc-900 pb-6">
           <h2 className="font-display text-base font-bold uppercase tracking-wider text-foreground">
             {content.section_2_title}
           </h2>
-          <p>{content.section_2_body}</p>
+          <FormattedText text={content.section_2_body} />
         </div>
 
         <div className="space-y-3 border-b border-zinc-900 pb-6">
           <h2 className="font-display text-base font-bold uppercase tracking-wider text-foreground">
             {content.section_3_title}
           </h2>
-          <p>{content.section_3_body}</p>
+          <FormattedText text={content.section_3_body} />
         </div>
 
         <div className="space-y-3 border-b border-zinc-900 pb-6">
           <h2 className="font-display text-base font-bold uppercase tracking-wider text-foreground">
             {content.section_4_title}
           </h2>
-          <p>{content.section_4_body}</p>
+          <FormattedText text={content.section_4_body} />
         </div>
 
         <div className="space-y-3">
           <h2 className="font-display text-base font-bold uppercase tracking-wider text-foreground">
             {content.section_5_title}
           </h2>
-          <p>{content.section_5_body}</p>
+          <FormattedText text={content.section_5_body} />
         </div>
 
       </div>

@@ -34,7 +34,7 @@ export default function InlineText({
           e.stopPropagation();
           setEditing(true);
         }} 
-        className={`${className} cursor-pointer hover:outline hover:outline-dashed hover:outline-accent/60 hover:outline-1 px-1 transition-all rounded inline-block`}
+        className={`${className} cursor-pointer hover:outline hover:outline-dashed hover:outline-accent/60 hover:outline-1 px-1 transition-all rounded inline-block whitespace-pre-line`}
         title="Click to edit text visually"
       >
         {value || <span className="text-zinc-600 italic select-none">(Empty Field)</span>}
@@ -67,8 +67,8 @@ export default function InlineText({
         onChange={(e) => setLocalVal(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="w-full bg-[#121214] border border-accent text-foreground text-xs p-2 rounded focus:outline-none resize-none font-sans"
-        rows={3}
+        className="w-full bg-[#121214] border border-accent text-foreground text-xs p-2 rounded focus:outline-none font-sans leading-relaxed min-h-[100px]"
+        rows={5}
       />
     );
   }

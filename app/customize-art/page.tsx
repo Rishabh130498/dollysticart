@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Send, CheckCircle, Calendar, MessageSquare, Mail, User } from 'lucide-react';
 
+import FormattedText from '@/components/common/FormattedText';
+
 const DEFAULT_CUSTOMIZE_CONTENT = {
   hero_subtitle: "Bespoke Curation",
   hero_title: "Customize Art",
@@ -132,9 +134,7 @@ export default function CustomizeArtPage() {
               <h1 className="font-display text-xl sm:text-3xl font-extrabold uppercase tracking-wide text-foreground">
                 {content.hero_title}
               </h1>
-              <p className="font-sans text-xs text-muted leading-relaxed max-w-lg">
-                {content.hero_description}
-              </p>
+              <FormattedText text={content.hero_description} className="font-sans text-xs text-muted leading-relaxed max-w-lg" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">

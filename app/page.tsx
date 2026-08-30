@@ -5,6 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import FormattedText from '@/components/common/FormattedText';
 import FormattedPrice from '@/components/common/FormattedPrice';
 import { getProductCardImageUrl } from '@/lib/utils/image-helpers';
 import ProductCarousel from '@/components/product/ProductCarousel';
@@ -203,9 +204,7 @@ export default async function Home() {
                     <h2 className="font-display text-xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-[0.15em] text-foreground max-w-3xl leading-none">
                       {content.heading}
                     </h2>
-                    <p className="font-sans text-[10px] sm:text-xs text-foreground/80 max-w-md tracking-wider leading-relaxed">
-                      {content.description}
-                    </p>
+                    <FormattedText text={content.description} className="font-sans text-[10px] sm:text-xs text-foreground/80 max-w-md tracking-wider leading-relaxed" />
                     {content.cta_link && (
                       <Link 
                         href={content.cta_link} 
@@ -270,9 +269,7 @@ export default async function Home() {
                       <h4 className="font-display text-[13px] font-bold uppercase tracking-wider text-foreground">
                         {content.heading || 'FEATURED CAMPAIGN'}
                       </h4>
-                      <p className="font-sans text-[10px] text-zinc-300 tracking-wider">
-                        {content.description || 'Explore our latest releases.'}
-                      </p>
+                      <FormattedText text={content.description || 'Explore our latest releases.'} className="font-sans text-[10px] text-zinc-300 tracking-wider" />
                       {content.cta_link && (
                         <Link href={content.cta_link} className="btn-kith-outline w-fit text-[9px] py-1.5 px-3 pointer-events-auto">
                           {content.cta_text || 'SHOP NOW'}
@@ -344,9 +341,7 @@ export default async function Home() {
                 <h3 className="font-display text-xs font-bold uppercase tracking-[0.25em] text-accent mb-2">
                   {content.heading}
                 </h3>
-                <p className="font-sans text-xs text-zinc-400 max-w-2xl mx-auto leading-relaxed tracking-wide">
-                  {content.body}
-                </p>
+                <FormattedText text={content.body} className="font-sans text-xs text-zinc-400 max-w-2xl mx-auto leading-relaxed tracking-wide" />
               </section>
             );
 
@@ -477,7 +472,7 @@ export default async function Home() {
                   )}
                   <div className="z-10 flex flex-col justify-center items-center space-y-4 max-w-xl">
                     <h3 className="font-display text-sm md:text-base font-bold uppercase tracking-[0.15em] text-foreground">{content.heading}</h3>
-                    <p className="font-sans text-[10px] sm:text-xs text-zinc-400 tracking-wider leading-relaxed">{content.body}</p>
+                    <FormattedText text={content.body} className="font-sans text-[10px] sm:text-xs text-zinc-400 tracking-wider leading-relaxed" />
                     {content.cta_link && (
                       <Link href={content.cta_link} className="btn-kith-outline mt-2 text-[9px] py-1.5 px-3">
                         {content.cta_text || 'LEARN MORE'}

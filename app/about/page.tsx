@@ -1,5 +1,6 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
+import FormattedText from '@/components/common/FormattedText';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,9 +59,7 @@ export default async function AboutPage() {
         <h1 className="font-display text-3xl sm:text-5xl font-extrabold uppercase tracking-wide text-foreground">
           {content.hero_title}
         </h1>
-        <p className="font-sans text-xs sm:text-sm text-muted leading-relaxed max-w-xl mx-auto pt-2">
-          {content.hero_description}
-        </p>
+        <FormattedText text={content.hero_description} className="font-sans text-xs sm:text-sm text-muted leading-relaxed max-w-xl mx-auto pt-2" />
       </section>
 
       {/* 2. Side-by-Side Grid Column (Narrative 1) */}
@@ -89,12 +88,8 @@ export default async function AboutPage() {
           <h2 className="font-display text-2xl font-bold uppercase tracking-wider text-foreground">
             {content.origin_title}
           </h2>
-          <p className="font-sans text-xs sm:text-sm text-foreground/80 leading-relaxed">
-            {content.origin_body_1}
-          </p>
-          <p className="font-sans text-xs sm:text-sm text-foreground/70 leading-relaxed">
-            {content.origin_body_2}
-          </p>
+          <FormattedText text={content.origin_body_1} className="font-sans text-xs sm:text-sm text-foreground/80 leading-relaxed" />
+          <FormattedText text={content.origin_body_2} className="font-sans text-xs sm:text-sm text-foreground/70 leading-relaxed" />
         </div>
       </section>
 
@@ -107,12 +102,8 @@ export default async function AboutPage() {
           <h2 className="font-display text-2xl font-bold uppercase tracking-wider text-foreground">
             {content.process_title}
           </h2>
-          <p className="font-sans text-xs sm:text-sm text-foreground/80 leading-relaxed">
-            {content.process_body_1}
-          </p>
-          <p className="font-sans text-xs sm:text-sm text-foreground/70 leading-relaxed">
-            {content.process_body_2}
-          </p>
+          <FormattedText text={content.process_body_1} className="font-sans text-xs sm:text-sm text-foreground/80 leading-relaxed" />
+          <FormattedText text={content.process_body_2} className="font-sans text-xs sm:text-sm text-foreground/70 leading-relaxed" />
         </div>
         <div className="order-1 md:order-2">
           {content.process_image_url ? (
@@ -144,27 +135,21 @@ export default async function AboutPage() {
           <div className="space-y-3">
             <span className="font-display text-2xl font-black text-zinc-800">{content.timeline_phase_1_num}</span>
             <h4 className="font-display text-xs font-bold uppercase tracking-wider text-foreground">{content.timeline_phase_1_title}</h4>
-            <p className="font-sans text-xs text-muted leading-relaxed">
-              {content.timeline_phase_1_body}
-            </p>
+            <FormattedText text={content.timeline_phase_1_body} className="font-sans text-xs text-muted leading-relaxed" />
           </div>
 
           {/* Phase 2 */}
           <div className="space-y-3">
             <span className="font-display text-2xl font-black text-zinc-800">{content.timeline_phase_2_num}</span>
             <h4 className="font-display text-xs font-bold uppercase tracking-wider text-foreground">{content.timeline_phase_2_title}</h4>
-            <p className="font-sans text-xs text-muted leading-relaxed">
-              {content.timeline_phase_2_body}
-            </p>
+            <FormattedText text={content.timeline_phase_2_body} className="font-sans text-xs text-muted leading-relaxed" />
           </div>
 
           {/* Phase 3 */}
           <div className="space-y-3">
             <span className="font-display text-2xl font-black text-zinc-800">{content.timeline_phase_3_num}</span>
             <h4 className="font-display text-xs font-bold uppercase tracking-wider text-foreground">{content.timeline_phase_3_title}</h4>
-            <p className="font-sans text-xs text-muted leading-relaxed">
-              {content.timeline_phase_3_body}
-            </p>
+            <FormattedText text={content.timeline_phase_3_body} className="font-sans text-xs text-muted leading-relaxed" />
           </div>
         </div>
       </section>

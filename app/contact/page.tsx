@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, MapPin, Send, CheckCircle } from 'lucide-react';
 
+import FormattedText from '@/components/common/FormattedText';
+
 const DEFAULT_CONTACT_CONTENT = {
   hero_subtitle: "Customer Care",
   hero_title: "Contact Us",
@@ -113,9 +115,7 @@ export default function ContactPage() {
         <h1 className="font-display text-3xl sm:text-5xl font-extrabold uppercase tracking-wide text-foreground">
           {content.hero_title}
         </h1>
-        <p className="font-sans text-xs sm:text-sm text-muted leading-relaxed max-w-xl mx-auto pt-2">
-          {content.hero_description}
-        </p>
+        <FormattedText text={content.hero_description} className="font-sans text-xs sm:text-sm text-muted leading-relaxed max-w-xl mx-auto pt-2" />
       </div>
 
       {/* Main Container Layout */}
