@@ -53,7 +53,7 @@
 | Auth Service | Supabase Auth | Admin and customer session management |
 | File Storage | Supabase Storage | Product assets and visual builder uploads (`products` bucket) |
 | Payments | Razorpay API | Secured transactional gateways (Test Mode) |
-| Mailing | Resend / SMTP | PDF Invoice delivery & notifications |
+| Mailing | Brevo API (Transactional SMTP) | PDF Invoice delivery & notifications |
 | Icons | Lucide React | Modern visual iconography |
 
 ---
@@ -167,3 +167,100 @@ Before marking any feature as complete:
 - [ ] No secrets hardcoded in client code
 - [ ] Feature committed to Git with Capsulit-compliant commit message
 - [ ] Build compiles successfully via `npm run build`
+
+---
+
+## 8. RAZORPAY PAYMENT & BREVO EMAIL INTEGRATION
+
+### 8.1 Architectural Payment & Fulfillment Flow
+
+The payment integration guarantees 100% price integrity and transaction security using server-authoritative calculations, HMAC-SHA256 signature verification, and dual-layer fulfillment dispatch (Client + Webhook).
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                      RAZORPAY CHECKOUT ARCHITECTURE                    │
+│                                                                        │
+│  1. Customer fills address & submits at /checkout                       │
+│  2. Client calls POST /api/razorpay/order                              │
+│     ├── Server queries active product prices from PostgreSQL catalog   │
+│     ├── Recalculates subtotal/discounts in Paise (Server-Authoritative) │
+│     ├── Registers pending order & order_items in Supabase              │
+│     └── Calls Razorpay SDK to create order (or Sandbox fallback ID)    │
+│  3. Razorpay SDK Checkout Modal opens                                  │
+│  4. Customer pays via UPI / Credit Card / NetBanking / Wallet          │
+│  5. Verification & Fulfillment Dispatch (Dual Layer):                  │
+│     ├── LAYER 1 (Synchronous Client Handler):                          │
+│     │   POST /api/razorpay/verify -> HMAC-SHA256 Signature Verification│
+│     └── LAYER 2 (Asynchronous Server Webhook):                         │
+│         POST /api/razorpay/webhook -> Signature check & backup fallback│
+│  6. Database updates order status to 'paid'                            │
+│  7. Server compiles PDF Invoice & dispatches via Brevo Email API       │
+│  8. Client redirected to /checkout/success?id=...                      │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 8.2 Endpoint & Component Reference
+
+| Module / Component | Path | Description & Purpose |
+| :--- | :--- | :--- |
+| **Checkout UI & Modal** | [`app/checkout/page.tsx`](app/checkout/page.tsx) | Renders address forms, dynamically injects Razorpay Checkout SDK, opens payment overlay, and includes Sandbox Testing Modal fallback. |
+| **Order Generator API** | [`app/api/razorpay/order/route.ts`](app/api/razorpay/order/route.ts) | Server endpoint validating cart items against database prices, creating pending orders, and requesting Razorpay Order IDs. |
+| **Signature Verification API** | [`app/api/razorpay/verify/route.ts`](app/api/razorpay/verify/route.ts) | Server endpoint verifying payment authenticity via HMAC-SHA256 hash using `RAZORPAY_KEY_SECRET`. |
+| **Server Webhook Listener** | [`app/api/razorpay/webhook/route.ts`](app/api/razorpay/webhook/route.ts) | Asynchronous webhook receiving `order.paid` and `payment.captured` events directly from Razorpay servers. |
+| **PDF Invoice Generator** | [`lib/pdf/invoice.tsx`](lib/pdf/invoice.tsx) | Compiles professional PDF invoice document containing order items, tax breakdown, and shipping details. |
+| **Brevo Email Dispatcher** | [`lib/email/brevo.ts`](lib/email/brevo.ts) | Connects to Brevo REST API (`https://api.brevo.com/v3/smtp/email`) to dispatch confirmation emails with Base64 PDF invoice attachments. |
+| **Success Receipt Page** | [`app/checkout/success/page.tsx`](app/checkout/success/page.tsx) | Customer receipt page displaying purchase summary, order reference ID, and receipt actions. |
+| **Failure Retry Page** | [`app/checkout/failed/page.tsx`](app/checkout/failed/page.tsx) | Error page assisting users when payments fail or are cancelled by the customer. |
+
+---
+
+### 8.3 Environment Variables Setup
+
+To connect your live or test Razorpay and Brevo accounts, add the following variables to your `.env.local` file:
+
+```env
+# ==============================================================================
+# RAZORPAY PAYMENT GATEWAY CREDENTIALS
+# ==============================================================================
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_YourKeyIDHere
+RAZORPAY_KEY_SECRET=YourSecretKeyHere
+RAZORPAY_WEBHOOK_SECRET=YourWebhookSecretHere
+
+# ==============================================================================
+# BREVO TRANSACTIONAL EMAIL CREDENTIALS
+# ==============================================================================
+BREVO_API_KEY=xkeysib-YourBrevoApiKeyHere
+EMAIL_FROM=Dollysticart Studio <support@dollysticart.com>
+```
+
+> [!IMPORTANT]
+> **Automatic Sandbox Fallback:**
+> If `NEXT_PUBLIC_RAZORPAY_KEY_ID` or `BREVO_API_KEY` are not set (or contain placeholder values), the application automatically operates in **Sandbox Testing Mode**. 
+> - **Checkout**: Displays a simulated payment modal allowing you to test "Simulate Success" or "Simulate Failure" without needing real API keys.
+> - **Emails**: Logs invoice email payloads and PDF attachment sizes to the server console without calling external mail servers.
+
+---
+
+### 8.4 How to Test Payments & Webhooks
+
+#### 1. Testing Local Sandbox Mode (No API keys required)
+1. Add items to cart and proceed to `/checkout`.
+2. Populate the shipping form and click **CONFIRM AND PAY**.
+3. A **Razorpay Sandbox Payment** modal will appear.
+4. Click **SIMULATE SUCCESS** to complete order placement and view the `/checkout/success` receipt page.
+
+#### 2. Testing Live / Test Razorpay Keys
+1. Set `NEXT_PUBLIC_RAZORPAY_KEY_ID` (e.g. `rzp_test_...`) and `RAZORPAY_KEY_SECRET` in `.env.local`.
+2. Restart the Next.js dev server (`npm run dev`).
+3. Open `/checkout` and click **CONFIRM AND PAY**.
+4. The official Razorpay overlay will open. Enter Razorpay test UPI IDs or card numbers to test live payment verification.
+
+#### 3. Setting Up Razorpay Server Webhooks
+1. In your Razorpay Dashboard, go to **Settings** &rarr; **Webhooks** &rarr; **Add New Webhook**.
+2. Set Webhook URL to: `https://your-domain.com/api/razorpay/webhook`.
+3. Select active events: `order.paid` and `payment.captured`.
+4. Copy the secret key into `RAZORPAY_WEBHOOK_SECRET` in `.env.local`.
+
+

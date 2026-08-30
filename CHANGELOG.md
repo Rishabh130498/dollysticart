@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.15] - 2026-08-30
+
+### Changed
+- Replaced Resend email integration with Brevo Transactional Email API (`lib/email/brevo.ts`).
+- Updated Razorpay payment verification (`/api/razorpay/verify`) and webhook (`/api/razorpay/webhook`) routes to dispatch PDF invoice emails using Brevo REST API (`https://api.brevo.com/v3/smtp/email`).
+- Updated environment setup documentation and tech stack guide in `README.md` to reference `BREVO_API_KEY`.
+
+---
+
+## [0.1.14] - 2026-08-30
+
+### Added
+- Added Razorpay webhook endpoint (`app/api/razorpay/webhook/route.ts`) to verify asynchronous server-to-server payment notifications (`order.paid`, `payment.captured`).
+- Verified server-side price calculation and order insertion API (`/api/razorpay/order`).
+- Verified cryptographic signature verification via HMAC-SHA256 (`/api/razorpay/verify`).
+- Verified Razorpay checkout modal SDK integration and Sandbox testing fallback UI (`app/checkout/page.tsx`).
+
+---
+
 ## [0.1.13] - 2026-08-30
 
 ### Added

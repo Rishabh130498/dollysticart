@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateInvoicePdf } from '@/lib/pdf/invoice';
-import { sendInvoiceEmail } from '@/lib/email/resend';
+import { sendInvoiceEmail } from '@/lib/email/brevo';
 
 
 export async function POST(req: Request) {
