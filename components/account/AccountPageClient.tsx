@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { LogIn, LogOut, ShoppingBag, User, Mail, Lock, Shield, Eye, Calendar, DollarSign, ExternalLink } from 'lucide-react';
+import { LogIn, LogOut, ShoppingBag, User, Mail, Lock, Shield, Eye, EyeOff, Calendar, DollarSign, ExternalLink, Check, X } from 'lucide-react';
 
 // Price Formatter Helper
 function formatPrice(paise: number) {
@@ -26,6 +26,9 @@ export default function AccountPageClient() {
   // Auth Form Fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState('');
   const [authError, setAuthError] = useState('');
   
@@ -120,6 +123,12 @@ export default function AccountPageClient() {
       return;
     }
 
+    if (password !== confirmPassword) {
+      setAuthError('Passwords do not match. Please verify your confirm password field.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -200,7 +209,7 @@ export default function AccountPageClient() {
             {/* Header Tabs */}
             <div className="flex border-b border-zinc-900 pb-3 justify-center gap-6">
               <button
-                onClick={() => { setActiveTab('login'); setAuthError(''); }}
+                onClick={() => { setActiveTab('login'); setAuthError(''); setConfirmPassword(''); }}
                 className={`font-display text-xs font-bold uppercase tracking-widest pb-1 transition-colors ${
                   activeTab === 'login' ? 'text-accent border-b border-accent' : 'text-zinc-600 hover:text-zinc-300'
                 }`}
@@ -208,7 +217,7 @@ export default function AccountPageClient() {
                 SIGN IN
               </button>
               <button
-                onClick={() => { setActiveTab('signup'); setAuthError(''); }}
+                onClick={() => { setActiveTab('signup'); setAuthError(''); setConfirmPassword(''); }}
                 className={`font-display text-xs font-bold uppercase tracking-widest pb-1 transition-colors ${
                   activeTab === 'signup' ? 'text-accent border-b border-accent' : 'text-zinc-600 hover:text-zinc-300'
                 }`}
@@ -263,19 +272,101 @@ export default function AccountPageClient() {
 
               {/* Password */}
               <div className="flex flex-col space-y-2">
-                <label className="font-display text-[9px] uppercase tracking-widest text-muted flex items-center gap-1.5">
-                  <Lock className="h-3 w-3 text-zinc-600" />
-                  Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="h-11 border border-zinc-800 bg-background px-4 font-display text-xs tracking-wider text-foreground placeholder:text-zinc-600 focus:border-accent focus:outline-none transition-colors"
-                />
+                <div className="flex items-center justify-between">
+                  <label className="font-display text-[9px] uppercase tracking-widest text-muted flex items-center gap-1.5">
+                    <Lock className="h-3 w-3 text-zinc-600" />
+                    Password
+                  </label>
+                  {activeTab === 'signup' && password.length > 0 && (
+                    <span className={`flex items-center gap-1 font-sans text-[10px] font-medium transition-colors ${
+                      password.length >= 6 ? 'text-emerald-400' : 'text-zinc-500'
+                    }`}>
+                      <Check className={`h-3 w-3 ${password.length >= 6 ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                      {password.length >= 6 ? '6+ characters' : 'Min 6 chars'}
+                    </span>
+                  )}
+                </div>
+                <div className="relative flex items-center">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-11 w-full border border-zinc-800 bg-background pl-4 pr-10 font-display text-xs tracking-wider text-foreground placeholder:text-zinc-600 focus:border-accent focus:outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 text-zinc-500 hover:text-foreground transition-colors p-1"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
+
+              {/* Confirm Password (only for signup) */}
+              {activeTab === 'signup' && (
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-display text-[9px] uppercase tracking-widest text-muted flex items-center gap-1.5">
+                      <Lock className="h-3 w-3 text-zinc-600" />
+                      Confirm Password
+                    </label>
+                    {confirmPassword.length > 0 && (
+                      password === confirmPassword ? (
+                        <span className="flex items-center gap-1 font-sans text-[10px] font-semibold text-emerald-400 animate-in fade-in duration-200">
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          Passwords match
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 font-sans text-[10px] font-medium text-rose-400 animate-in fade-in duration-200">
+                          <X className="h-3.5 w-3.5 text-rose-400" />
+                          Passwords do not match
+                        </span>
+                      )
+                    )}
+                  </div>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className={`h-11 w-full border bg-background pl-4 pr-16 font-display text-xs tracking-wider text-foreground placeholder:text-zinc-600 focus:outline-none transition-all ${
+                        confirmPassword.length > 0
+                          ? password === confirmPassword
+                            ? 'border-emerald-500/60 focus:border-emerald-400 bg-emerald-950/10'
+                            : 'border-rose-500/60 focus:border-rose-400 bg-rose-950/10'
+                          : 'border-zinc-800 focus:border-accent'
+                      }`}
+                    />
+                    <div className="absolute right-3 flex items-center gap-1.5">
+                      {confirmPassword.length > 0 && (
+                        password === confirmPassword ? (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center animate-in zoom-in-50 duration-200" title="Passwords Match">
+                            <Check className="h-3 w-3 text-emerald-400 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center animate-in zoom-in-50 duration-200" title="Passwords Do Not Match">
+                            <X className="h-3 w-3 text-rose-400 stroke-[3]" />
+                          </div>
+                        )
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="text-zinc-500 hover:text-foreground transition-colors p-1"
+                        aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Submit CTA button */}
               <button
@@ -374,6 +465,20 @@ export default function AccountPageClient() {
                 <span className="text-green-500 uppercase tracking-widest text-[9px] font-semibold">Verified</span>
               </div>
             </div>
+
+            {/* Admin Portal Button */}
+            {profile?.role === 'admin' && (
+              <Link
+                href="/admin"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-11 flex items-center justify-center gap-2 font-display text-[10px] font-bold uppercase tracking-widest border border-accent/40 bg-accent/10 text-accent hover:bg-accent hover:text-black transition-all duration-300"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                OPEN ADMIN PANEL
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            )}
 
             {/* Logout trigger */}
             <button

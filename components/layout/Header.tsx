@@ -191,6 +191,8 @@ export default function Header() {
             {isAdmin && (
               <Link
                 href="/admin"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hidden sm:flex items-center gap-1 border border-accent/20 bg-accent/5 px-2.5 py-1 font-display text-[8px] font-bold uppercase tracking-widest text-accent hover:bg-accent hover:text-black transition-all"
               >
                 <ShieldAlert className="h-3 w-3" />
@@ -396,6 +398,8 @@ export default function Header() {
               {isAdmin && (
                 <Link
                   href="/admin"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2 border-t border-zinc-900 pt-6 font-display text-xs font-bold uppercase tracking-[0.2em] text-accent"
                 >

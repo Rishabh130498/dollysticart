@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.10] - 2026-08-30
+
+### Added
+- Added mandatory Confirm Password field to registration form with password matching validation.
+- Added password visibility toggle buttons (`Eye` / `EyeOff` icons) on Password and Confirm Password input fields.
+- Integrated real-time password match indicators featuring green checkmark (`✓`) circle badges, status text badges, and color-coded field borders.
+- Updated Admin Panel links in header (desktop and mobile) and customer dashboard to open in a new tab (`target="_blank"`).
+
+---
+
 ## [0.1.9] - 2026-08-29
 
 ### Fixed
