@@ -4,6 +4,7 @@ import Script from 'next/script';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { CountryProvider } from '@/context/CountryContext';
+import ImageProtection from '@/components/common/ImageProtection';
 import './globals.css';
 
 const outfit = Outfit({
@@ -56,6 +57,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         <CountryProvider>
+          <ImageProtection />
           <Header />
           <main className="flex-1 w-full">{children}</main>
           <Footer />

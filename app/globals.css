@@ -43,6 +43,19 @@ body {
   top: 0px !important;
 }
 
+/* Image Protection: Disable dragging & native selection */
+img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
 /* Hide default Google Translate top banner & toolbar */
 .goog-te-banner-frame,
 #goog-gt-tt,

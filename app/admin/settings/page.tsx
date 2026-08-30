@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Plus, Trash2, Save, User, Mail, ShieldAlert, CheckCircle } from 'lucide-react';
+import { ShieldCheck, Plus, Trash2, Save, User, Mail, ShieldAlert, CheckCircle, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { createOptimizedWebPFile, generateStorageFileNames } from '@/lib/utils/image-optimization';
 
 export default function AdminSettingsPage() {
   const [adminLimit, setAdminLimit] = useState<number>(1);
@@ -146,6 +147,120 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const [runningOptimizer, setRunningOptimizer] = useState(false);
+  const [optimizerLog, setOptimizerLog] = useState<string[]>([]);
+
+  // Batch Image Optimization Handler
+  const handleRunBatchOptimization = async () => {
+    if (!confirm('This will convert all existing legacy JPG/PNG images in your database to optimized WebP format and update DB records. Continue?')) {
+      return;
+    }
+    setRunningOptimizer(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    setOptimizerLog(['Starting batch image conversion to WebP...']);
+
+    try {
+      let convertedCount = 0;
+
+      // 1. Process homepage_sections
+      const { data: sections } = await supabase.from('homepage_sections').select('*');
+      if (sections) {
+        for (const sec of sections) {
+          let secUpdated = false;
+          let draftStr = JSON.stringify(sec.draft_content || {});
+          let pubStr = JSON.stringify(sec.published_content || {});
+
+          const urlRegex = /https:\/\/[^"'\s]+\.(jpg|jpeg|png)/gi;
+          const draftMatches = Array.from(draftStr.matchAll(urlRegex)).map(m => m[0]);
+          const pubMatches = Array.from(pubStr.matchAll(urlRegex)).map(m => m[0]);
+          const urls = Array.from(new Set([...draftMatches, ...pubMatches]));
+
+          for (const oldUrl of urls) {
+            try {
+              const fileName = oldUrl.substring(oldUrl.lastIndexOf('/') + 1);
+              setOptimizerLog(prev => [...prev, `Processing CMS image: ${fileName}`]);
+
+              const res = await fetch(oldUrl);
+              const blob = await res.blob();
+              const { webFileName } = generateStorageFileNames(fileName, 'cms-legacy');
+              const webFile = await createOptimizedWebPFile(blob, webFileName, 1400, 1400, 0.82);
+
+              let deliveryBucket = 'products-web';
+              const { error: webErr } = await supabase.storage.from('products-web').upload(webFileName, webFile);
+              if (webErr) {
+                deliveryBucket = 'products';
+                await supabase.storage.from('products').upload(webFileName, webFile);
+              }
+
+              const { data: { publicUrl } } = supabase.storage.from(deliveryBucket).getPublicUrl(webFileName);
+
+              draftStr = draftStr.replaceAll(oldUrl, publicUrl);
+              pubStr = pubStr.replaceAll(oldUrl, publicUrl);
+              secUpdated = true;
+              convertedCount++;
+              setOptimizerLog(prev => [...prev, `Converted -> ${webFileName}`]);
+            } catch (err: any) {
+              console.warn('Failed converting CMS image:', oldUrl, err);
+            }
+          }
+
+          if (secUpdated) {
+            await supabase.from('homepage_sections').update({
+              draft_content: JSON.parse(draftStr),
+              published_content: JSON.parse(pubStr),
+              updated_at: new Date().toISOString(),
+            }).eq('id', sec.id);
+          }
+        }
+      }
+
+      // 2. Process product_images
+      const { data: prodImgs } = await supabase.from('product_images').select('*');
+      if (prodImgs) {
+        for (const imgRow of prodImgs) {
+          if (imgRow.image_url && /\.(jpg|jpeg|png)/i.test(imgRow.image_url)) {
+            try {
+              const fileName = imgRow.image_url.substring(imgRow.image_url.lastIndexOf('/') + 1);
+              setOptimizerLog(prev => [...prev, `Processing Product image: ${fileName}`]);
+
+              const res = await fetch(imgRow.image_url);
+              const blob = await res.blob();
+              const { webFileName } = generateStorageFileNames(fileName, 'prod-legacy');
+              const webFile = await createOptimizedWebPFile(blob, webFileName, 1400, 1400, 0.82);
+
+              let deliveryBucket = 'products-web';
+              const { error: webErr } = await supabase.storage.from('products-web').upload(webFileName, webFile);
+              if (webErr) {
+                deliveryBucket = 'products';
+                await supabase.storage.from('products').upload(webFileName, webFile);
+              }
+
+              const { data: { publicUrl } } = supabase.storage.from(deliveryBucket).getPublicUrl(webFileName);
+
+              await supabase.from('product_images').update({
+                image_url: publicUrl
+              }).eq('id', imgRow.id);
+
+              convertedCount++;
+              setOptimizerLog(prev => [...prev, `Converted Product Image -> ${webFileName}`]);
+            } catch (err: any) {
+              console.warn('Failed converting product image:', imgRow.image_url, err);
+            }
+          }
+        }
+      }
+
+      setOptimizerLog(prev => [...prev, `✅ Complete! Converted ${convertedCount} legacy images to WebP.`]);
+      setSuccessMsg(`Successfully converted ${convertedCount} legacy images to WebP format! Refresh your browser.`);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Batch optimization failed.');
+    } finally {
+      setRunningOptimizer(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-20">
@@ -177,6 +292,41 @@ export default function AdminSettingsPage() {
           {successMsg}
         </div>
       )}
+
+      {/* Batch Image WebP Optimizer Tool */}
+      <div className="border border-border-subtle bg-[#0c0c0e] p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
+          <div>
+            <h2 className="font-display text-xs font-bold uppercase tracking-widest text-foreground/80 flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-accent" />
+              Batch Legacy Image Optimizer (JPG/PNG &rarr; WebP)
+            </h2>
+            <p className="font-sans text-[11px] text-zinc-400 mt-1">
+              Converts existing legacy JPG/PNG images in your database (homepage sections & products) into compressed, web-ready WebP files stored in Supabase.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRunBatchOptimization}
+            disabled={runningOptimizer}
+            className="h-10 px-5 bg-accent text-black font-display text-[9px] font-extrabold uppercase tracking-widest border border-accent hover:bg-transparent hover:text-accent transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0 rounded"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${runningOptimizer ? 'animate-spin' : ''}`} />
+            {runningOptimizer ? 'OPTIMIZING IMAGES...' : 'RUN BATCH WEBP CONVERTER'}
+          </button>
+        </div>
+
+        {optimizerLog.length > 0 && (
+          <div className="p-3 border border-zinc-900 bg-black/90 font-mono text-[9px] text-zinc-400 max-h-40 overflow-y-auto space-y-1 rounded">
+            {optimizerLog.map((logItem, idx) => (
+              <div key={idx} className={logItem.includes('✅') ? 'text-accent font-bold' : ''}>
+                {logItem}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Tri-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

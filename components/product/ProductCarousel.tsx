@@ -126,6 +126,7 @@ export default function ProductCarousel({ products, heading = 'LATEST RELEASES' 
                   <img
                     src={product.product_images[0].image_url}
                     alt={product.name}
+                    draggable={false}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 ) : (

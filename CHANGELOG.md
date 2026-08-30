@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.13] - 2026-08-30
+
+### Added
+- Implemented global Image Protection disabling right-click context menu and drag-and-drop actions on images across the storefront (`components/common/ImageProtection.tsx` & `globals.css`).
+- Built browser-side WebP image optimization helper (`lib/utils/image-optimization.ts`) scaling images to max 1400px width/height and 82% WebP quality.
+- Added dual-bucket storage architecture (`components/admin/ImageDropzone.tsx`) uploading master original images to private bucket `products-originals` and WebP assets to public bucket `products-web`.
+- Added server action for secure signed URLs to private master assets for verified admin users (`app/actions/image-storage-actions.ts`).
+- Added one-click **Batch Legacy Image Optimizer** tool in Admin Settings (`/admin/settings`) to convert existing JPG/PNG database image URLs into optimized WebP assets.
+
+---
+
 ## [0.1.12] - 2026-08-30
 
 ### Added

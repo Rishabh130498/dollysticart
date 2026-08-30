@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import ImageCropModal from '@/components/admin/ImageCropModal';
+import { createOptimizedWebPFile, generateStorageFileNames } from '@/lib/utils/image-optimization';
 
 // --- HELPER TO PARSE RATIO AND RECOMMENDED PIXEL DIMENSIONS ---
 export function getAspectDetails(ratioClass: string = 'aspect-[2/1]'): { aspect: number; px: string; label: string } {
@@ -191,29 +192,48 @@ export default function ImageDropzone({
     }
   };
 
-  // Upload cropped blob file to Supabase storage
+  // Upload cropped blob file to Supabase storage (Dual-bucket: Private Master + Public WebP)
   const uploadCroppedBlob = async (blob: Blob) => {
     setUploading(true);
     setCropImageSrc(null);
     setShowOptions(false);
     setShowDatabasePicker(false);
     try {
-      const filePath = `cms-${Date.now()}-${Math.floor(Math.random() * 1000)}.jpg`;
-      const file = new File([blob], filePath, { type: 'image/jpeg' });
+      const { originalFileName, webFileName } = generateStorageFileNames('cms-crop.jpg', 'cms');
+      const originalFile = new File([blob], originalFileName, { type: 'image/jpeg' });
+      const webFile = await createOptimizedWebPFile(blob, webFileName, 1400, 1400, 0.82);
 
-      const { error: uploadError } = await supabase.storage
-        .from('products')
-        .upload(filePath, file);
+      // 1. Upload high-res master to private bucket 'products-originals' (fallback to 'products')
+      const { error: origError } = await supabase.storage
+        .from('products-originals')
+        .upload(originalFileName, originalFile);
 
-      if (uploadError) throw uploadError;
+      if (origError) {
+        // Fallback to legacy bucket if products-originals bucket not yet created
+        await supabase.storage.from('products').upload(`orig/${originalFileName}`, originalFile);
+      }
+
+      // 2. Upload optimized WebP asset to public delivery bucket 'products-web' (fallback to 'products')
+      let deliveryBucket = 'products-web';
+      const { error: webError } = await supabase.storage
+        .from('products-web')
+        .upload(webFileName, webFile);
+
+      if (webError) {
+        deliveryBucket = 'products';
+        const { error: fallbackWebErr } = await supabase.storage
+          .from('products')
+          .upload(webFileName, webFile);
+        if (fallbackWebErr) throw fallbackWebErr;
+      }
 
       const { data: { publicUrl } } = supabase.storage
-        .from('products')
-        .getPublicUrl(filePath);
+        .from(deliveryBucket)
+        .getPublicUrl(webFileName);
 
       onUploadSuccess(publicUrl);
     } catch (err: any) {
-      console.error(err);
+      console.error('Cropped image upload failed:', err);
       alert(err.message || 'Cropped image upload failed. Verify storage rules.');
     } finally {
       setUploading(false);
