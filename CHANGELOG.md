@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] - 2026-08-30
+
+### Added
+- Added an inline explanatory instruction note under the **Slug (URL Keyword)** field in [`ProductForm.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/components/admin/ProductForm.tsx#L612) clarifying web address formation and manual editing rules.
+
+---
+
+## [0.1.17] - 2026-08-30
+
+### Changed
+- Upgraded all built-in HTML email templates (`lib/email/email-events.ts` & `lib/email/brevo.ts`) to include warm, personalized customer greetings (`Hello [First Name] ✨` / `Hello [Email Username] ✨`) and luxury Dollysticart Studio header/footer branding.
+- Completely removed legacy `lib/email/resend.ts` file and purged all Resend references across the codebase.
+
+---
+
+## [0.1.16] - 2026-08-30
+
+### Added
+- Integrated **Brevo Transactional Email Service** across the full e-commerce lifecycle (`lib/email/brevo.ts` & `lib/email/email-events.ts`).
+- Created `email_logs` database table migration (`supabase/migrations/20260830000001_email_logs.sql`) guaranteeing idempotency and tracking dispatch attempts.
+- Added digital download temporary signed URL generator (`lib/storage/digital-downloads.ts`) for secure private Supabase Storage delivery.
+- Added courier shipping inputs (`courier_name`, `tracking_number`, `tracking_url`) and order status email triggers (`shipped`, `out_for_delivery`, `cancelled`, `refunded`) to Admin Orders panel.
+- Added **Email Activity Ledger** under Admin Settings with manual retry support.
+- Created Brevo Newsletter Subscription API (`app/api/newsletter/subscribe/route.ts`).
+
+---
+
 ## [0.1.15] - 2026-08-30
 
 ### Changed

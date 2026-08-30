@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateInvoicePdf } from '@/lib/pdf/invoice';
-import { sendInvoiceEmail } from '@/lib/email/brevo';
+import { dispatchOrderConfirmationEvent, dispatchDigitalDownloadEvent } from '@/lib/email/email-events';
 
 
 export async function POST(req: Request) {
@@ -80,21 +80,11 @@ export async function POST(req: Request) {
 
     // 5. Trigger invoice PDF compilation and email confirmation
     try {
-      // Fetch order items to display on invoice
-      const { data: items } = await adminDb
-        .from('order_items')
-        .select('*, products(name)')
-        .eq('order_id', order.id);
-
-      // Generate PDF buffer
-      const pdfBuffer = await generateInvoicePdf(order, items || []);
-
-      // Dispatch email notification
-      await sendInvoiceEmail(order, items || [], pdfBuffer);
-      
-      console.log(`[FULFILLMENT SUCCESS] Fulfilling invoice email routing for order ${order.id}`);
+      await dispatchOrderConfirmationEvent(order.id);
+      await dispatchDigitalDownloadEvent(order.id);
+      console.log(`[FULFILLMENT SUCCESS] Fulfilling email events for order ${order.id}`);
     } catch (emailErr) {
-      console.error('Non-blocking invoice notification trigger failure', emailErr);
+      console.error('Non-blocking email dispatch failure', emailErr);
     }
 
     return NextResponse.json({

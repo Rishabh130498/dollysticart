@@ -260,7 +260,35 @@ EMAIL_FROM=Dollysticart Studio <support@dollysticart.com>
 #### 3. Setting Up Razorpay Server Webhooks
 1. In your Razorpay Dashboard, go to **Settings** &rarr; **Webhooks** &rarr; **Add New Webhook**.
 2. Set Webhook URL to: `https://your-domain.com/api/razorpay/webhook`.
-3. Select active events: `order.paid` and `payment.captured`.
+3. Select active events: `order.paid`, `payment.captured`, `payment.failed`, and `refund.processed`.
 4. Copy the secret key into `RAZORPAY_WEBHOOK_SECRET` in `.env.local`.
+
+---
+
+### 8.5 EMAIL MANAGEMENT SUMMARY CHECKLIST
+
+Where email configurations live and what each service handles in your store:
+
+| Location | What to Set | What it Handles | How it Works |
+| :--- | :--- | :--- | :--- |
+| **Vercel Environment Variables** | `BREVO_API_KEY`<br>`EMAIL_FROM` | • Order Confirmation & PDF Invoice<br>• Payment Failed Notice<br>• Digital Product Downloads<br>• Order Shipped + Courier Tracking<br>• Out for Delivery Notice<br>• Order Cancelled & Refunded<br>• Newsletter Signups | **REQUIRED**: Connects to Brevo REST API (`lib/email/brevo.ts`). Dispatches emails using Brevo Visual Templates, dynamic parameters (`params`), and PDF attachments. |
+| **Supabase Dashboard** | Brevo SMTP Credentials<br>*(Port 587)* | • New User Email Verification<br>• Password Reset links | **OPTIONAL**: Set under Supabase **Project Settings** &rarr; **Authentication** &rarr; **SMTP Settings**. Sends custom branded account auth links. |
+
+---
+
+### Quick Event-to-Email Reference Table
+
+| Event / Trigger | Environment Variable / Feature | Delivery Details & Idempotency Rules |
+| :--- | :--- | :--- |
+| **Order Paid** | `BREVO_TEMPLATE_ORDER_CONFIRMATION` | Sent **ONCE** after Razorpay payment verification on backend. Includes attached PDF invoice. |
+| **Payment Failed** | `BREVO_TEMPLATE_PAYMENT_FAILED` | Sent ONLY on genuine Razorpay `payment.failed` webhooks. Never sent on modal dismissal. |
+| **Digital Download** | `BREVO_TEMPLATE_DIGITAL_DOWNLOAD` | Includes 7-day signed download link. Customers get **lifetime access** by regenerating links anytime in `/account`. |
+| **Order Shipped** | `BREVO_TEMPLATE_ORDER_SHIPPED` | Sent when Admin updates status to `shipped` + inputs courier name, tracking number, and tracking URL. |
+| **Out for Delivery** | `BREVO_TEMPLATE_OUT_FOR_DELIVERY` | Sent when Admin updates status to `out_for_delivery`. |
+| **Order Cancelled** | `BREVO_TEMPLATE_ORDER_CANCELLED` | Sent when Admin or system marks order status as `cancelled`. |
+| **Refund Completed** | `BREVO_TEMPLATE_REFUND_COMPLETED` | Sent when payment status changes to `refunded` / `refund.processed` webhook. |
+| **Newsletter Signup** | `BREVO_NEWSLETTER_LIST_ID` | Adds subscriber email directly to Brevo Contact List (`/api/newsletter/subscribe`). |
+
+
 
 

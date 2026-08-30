@@ -476,6 +476,130 @@ export default function AdminSettingsPage() {
 
       </div>
 
+      {/* BREVO EMAIL DISPATCH ACTIVITY LEDGER */}
+      <EmailLogsLedger />
+
+    </div>
+  );
+}
+
+function EmailLogsLedger() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+
+  const loadLogs = async () => {
+    setLoading(true);
+    try {
+      const { fetchEmailLogsAction } = await import('@/app/actions/admin-email-logs-actions');
+      const res = await fetchEmailLogsAction();
+      if (res.success) {
+        setLogs(res.data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLogs();
+  }, []);
+
+  const handleRetry = async (logId: string) => {
+    setRetryingId(logId);
+    try {
+      const { retryFailedEmailAction } = await import('@/app/actions/admin-email-logs-actions');
+      const res = await retryFailedEmailAction(logId);
+      if (!res.success) throw new Error(res.error || 'Retry failed');
+      alert('Email retry dispatched successfully.');
+      loadLogs();
+    } catch (err: any) {
+      alert(err.message || 'Email retry failed.');
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
+  return (
+    <div className="p-6 md:p-8 border border-border-subtle bg-[#0c0c0e] space-y-6">
+      <div className="flex justify-between items-center border-b border-border-subtle pb-4">
+        <div>
+          <span className="font-display text-[9px] uppercase tracking-[0.25em] text-accent font-semibold">Brevo Dispatcher</span>
+          <h2 className="font-display text-lg font-bold uppercase tracking-wider">Email Activity Ledger</h2>
+        </div>
+        <button
+          onClick={loadLogs}
+          className="h-8 px-3 border border-zinc-800 hover:border-accent text-zinc-400 hover:text-accent font-display text-[8px] uppercase tracking-widest transition-all rounded flex items-center gap-1.5"
+        >
+          <RefreshCw className="h-3 w-3" />
+          REFRESH
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="py-8 text-center text-xs text-muted font-display uppercase tracking-widest">LOADING EMAIL LOGS...</div>
+      ) : logs.length === 0 ? (
+        <div className="py-8 text-center text-xs text-muted font-display uppercase tracking-widest border border-dashed border-zinc-900">
+          No Brevo email events logged yet.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left font-sans text-xs">
+            <thead>
+              <tr className="border-b border-border-subtle font-display text-[9px] uppercase tracking-widest text-muted bg-black/40">
+                <th className="p-3">Event Type</th>
+                <th className="p-3">Recipient</th>
+                <th className="p-3">Order Ref</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Attempts</th>
+                <th className="p-3">Message ID / Error</th>
+                <th className="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-subtle">
+              {logs.map((log) => (
+                <tr key={log.id} className="hover:bg-zinc-950/40 transition-colors">
+                  <td className="p-3 font-mono font-semibold uppercase text-accent">
+                    {log.event_type}
+                  </td>
+                  <td className="p-3 font-sans text-muted">{log.customer_email}</td>
+                  <td className="p-3 font-mono text-zinc-400">
+                    {log.order_id ? `#${log.order_id.substring(0, 8)}` : 'N/A'}
+                  </td>
+                  <td className="p-3">
+                    <span className={`text-[8px] uppercase tracking-widest px-2 py-0.5 border font-semibold ${
+                      log.status === 'sent'
+                        ? 'border-green-500/20 bg-green-500/5 text-green-500'
+                        : log.status === 'failed'
+                        ? 'border-red-500/20 bg-red-500/5 text-red-500'
+                        : 'border-amber-500/20 bg-amber-500/5 text-amber-500'
+                    }`}>
+                      {log.status}
+                    </span>
+                  </td>
+                  <td className="p-3 font-mono text-center">{log.attempt_count}</td>
+                  <td className="p-3 font-mono text-[10px] text-zinc-500 max-w-[200px] truncate">
+                    {log.provider_message_id || log.error_message || 'Pending'}
+                  </td>
+                  <td className="p-3 text-right">
+                    {log.status === 'failed' && (
+                      <button
+                        onClick={() => handleRetry(log.id)}
+                        disabled={retryingId === log.id}
+                        className="h-7 px-2.5 border border-zinc-800 hover:border-accent text-zinc-400 hover:text-accent font-display text-[8px] uppercase tracking-widest transition-all rounded disabled:opacity-50"
+                      >
+                        RETRY
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

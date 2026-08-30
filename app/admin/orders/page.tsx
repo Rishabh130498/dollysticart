@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, ChevronRight, Eye, Calendar, User, DollarSign, Mail, Phone, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { updateAdminOrderStatusAction } from '@/app/actions/admin-order-actions';
 
 // Price Formatter Helper
 function formatPrice(paise: number) {
@@ -43,21 +44,38 @@ export default function AdminOrdersPage() {
     loadOrders();
   }, []);
 
-  // Update order status trigger
+  // Update order status trigger using server action
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    let trackingInfo: any = {};
+
+    if (newStatus === 'shipped') {
+      const courierName = prompt('Enter Courier Provider Name:', 'BlueDart Express') || 'Express Courier';
+      const trackingNumber = prompt('Enter Tracking Number:', 'TRK-' + Math.floor(Math.random() * 1000000)) || '';
+      const trackingUrl = prompt('Enter Tracking URL:', 'https://www.bluedart.com') || '';
+      trackingInfo = { courier_name: courierName, tracking_number: trackingNumber, tracking_url: trackingUrl };
+    } else if (newStatus === 'cancelled' || newStatus === 'refunded') {
+      if (!confirm(`Are you sure you want to mark order #${orderId.substring(0, 8)} as ${newStatus}?`)) {
+        return;
+      }
+    }
+
     setUpdatingId(orderId);
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('id', orderId);
+      const res = await updateAdminOrderStatusAction(orderId, newStatus, trackingInfo);
 
-      if (error) throw error;
-      
-      setOrders(items => items.map(item => item.id === orderId ? { ...item, status: newStatus } : item));
-    } catch (err) {
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to update order status');
+      }
+
+      setOrders(items => items.map(item => item.id === orderId ? {
+        ...item,
+        status: newStatus,
+        payment_status: newStatus === 'refunded' ? 'refunded' : item.payment_status,
+        ...trackingInfo
+      } : item));
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to update status.');
+      alert(err.message || 'Failed to update status.');
     } finally {
       setUpdatingId(null);
     }
@@ -196,15 +214,50 @@ export default function AdminOrdersPage() {
                           SHIP PACKAGE
                         </button>
                       )}
-                      
-                      {/* Mark Completed */}
+
+                      {/* Mark Out for Delivery */}
                       {order.status === 'shipped' && (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, 'out_for_delivery')}
+                          disabled={updatingId === order.id}
+                          className="h-8 px-3 border border-zinc-800 hover:border-amber-400 text-zinc-400 hover:text-amber-400 font-display text-[8px] uppercase tracking-widest transition-all rounded disabled:opacity-50"
+                        >
+                          OUT FOR DELIVERY
+                        </button>
+                      )}
+
+                      {/* Mark Completed */}
+                      {(order.status === 'shipped' || order.status === 'out_for_delivery') && (
                         <button
                           onClick={() => updateOrderStatus(order.id, 'completed')}
                           disabled={updatingId === order.id}
                           className="h-8 px-3 border border-zinc-800 hover:border-accent text-zinc-400 hover:text-accent font-display text-[8px] uppercase tracking-widest transition-all rounded disabled:opacity-50"
                         >
                           COMPLETE ORDER
+                        </button>
+                      )}
+
+                      {/* Cancel Order */}
+                      {order.status !== 'cancelled' && order.status !== 'completed' && order.status !== 'refunded' && (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                          disabled={updatingId === order.id}
+                          className="h-8 px-2.5 border border-zinc-800 hover:border-red-500/50 text-zinc-500 hover:text-red-400 font-display text-[8px] uppercase tracking-widest transition-all rounded disabled:opacity-50"
+                          title="Cancel Order & Send Email"
+                        >
+                          CANCEL
+                        </button>
+                      )}
+
+                      {/* Mark Refunded */}
+                      {order.payment_status === 'paid' && order.status !== 'refunded' && (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, 'refunded')}
+                          disabled={updatingId === order.id}
+                          className="h-8 px-2.5 border border-zinc-800 hover:border-purple-500/50 text-zinc-500 hover:text-purple-400 font-display text-[8px] uppercase tracking-widest transition-all rounded disabled:opacity-50"
+                          title="Mark Refunded & Send Email"
+                        >
+                          REFUND
                         </button>
                       )}
 

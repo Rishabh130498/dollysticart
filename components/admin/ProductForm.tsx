@@ -610,8 +610,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
           {/* Slug */}
           <div className="flex flex-col space-y-2">
-            <label className="font-display text-[9px] uppercase tracking-widest text-muted">
-              Slug (URL Keyword) <span className="text-accent">*</span>
+            <label className="font-display text-[9px] uppercase tracking-widest text-muted flex justify-between items-center">
+              <span>Slug (URL Keyword) <span className="text-accent">*</span></span>
+              <span className="text-[8px] font-mono text-zinc-600">Auto-Generated</span>
             </label>
             <input
               type="text"
@@ -621,6 +622,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
               placeholder="e.g. abstract-impasto-1"
               className="h-10 border border-zinc-800 bg-background px-3 font-display text-xs tracking-wider text-foreground placeholder:text-zinc-700 focus:border-accent focus:outline-none transition-colors"
             />
+            <p className="text-[10px] text-zinc-500 font-sans leading-relaxed">
+              <strong className="text-zinc-400">What is this?</strong> The slug forms your product webpage web address (e.g. <span className="font-mono text-accent">/product/abstract-impasto-1</span>). If editing manually, use only <strong>lowercase letters</strong>, <strong>numbers</strong>, and <strong>hyphens (-)</strong> with no spaces or special symbols.
+            </p>
           </div>
 
           {/* Category Dropdown */}

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { generateInvoicePdf } from '@/lib/pdf/invoice';
-import { sendInvoiceEmail } from '@/lib/email/brevo';
+import {
+  dispatchOrderConfirmationEvent,
+  dispatchPaymentFailedEvent,
+  dispatchRefundCompletedEvent,
+  dispatchDigitalDownloadEvent,
+} from '@/lib/email/email-events';
 
 export async function POST(req: Request) {
   try {
@@ -37,7 +41,9 @@ export async function POST(req: Request) {
     const event = payload.event;
     console.log(`[RAZORPAY WEBHOOK] Received event: ${event}`);
 
-    // Process payment success events
+    const adminDb = createAdminClient();
+
+    // 1. Process payment success events (payment.captured / order.paid)
     if (event === 'payment.captured' || event === 'order.paid') {
       const paymentEntity = payload.payload?.payment?.entity || {};
       const razorpayOrderId = paymentEntity.order_id || payload.payload?.order?.entity?.id;
@@ -47,27 +53,24 @@ export async function POST(req: Request) {
         return NextResponse.json({ status: 'ignored', reason: 'No order_id in event payload' });
       }
 
-      const adminDb = createAdminClient();
-
-      // Retrieve database order
-      const { data: order, error: orderErr } = await adminDb
+      const { data: order } = await adminDb
         .from('orders')
         .select('*')
         .eq('razorpay_order_id', razorpayOrderId)
         .single();
 
-      if (orderErr || !order) {
+      if (!order) {
         console.warn(`[RAZORPAY WEBHOOK] Order not found for razorpay_order_id: ${razorpayOrderId}`);
         return NextResponse.json({ status: 'ignored', reason: 'Order not found' });
       }
 
-      // Check idempotency (skip if already processed)
+      // Idempotency check
       if (order.payment_status === 'paid') {
         return NextResponse.json({ status: 'ok', message: 'Order already marked as paid' });
       }
 
-      // Update order in database to PAID
-      const { error: updateErr } = await adminDb
+      // Update order to PAID
+      await adminDb
         .from('orders')
         .update({
           payment_status: 'paid',
@@ -78,24 +81,64 @@ export async function POST(req: Request) {
         })
         .eq('id', order.id);
 
-      if (updateErr) {
-        console.error('[RAZORPAY WEBHOOK] Database order update failed', updateErr);
-        return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
+      // Trigger Email Events (Order Confirmation + Invoice + Digital Download if applicable)
+      await dispatchOrderConfirmationEvent(order.id);
+      await dispatchDigitalDownloadEvent(order.id);
+    }
+
+    // 2. Process genuine payment failure events (payment.failed)
+    else if (event === 'payment.failed') {
+      const paymentEntity = payload.payload?.payment?.entity || {};
+      const razorpayOrderId = paymentEntity.order_id;
+      const failureReason = paymentEntity.error_description || 'Payment authorization failed.';
+
+      if (razorpayOrderId) {
+        const { data: order } = await adminDb
+          .from('orders')
+          .select('*')
+          .eq('razorpay_order_id', razorpayOrderId)
+          .single();
+
+        if (order && order.payment_status !== 'paid') {
+          await adminDb
+            .from('orders')
+            .update({
+              payment_status: 'failed',
+              status: 'failed',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', order.id);
+
+          // Dispatch genuine payment failure email (only on actual provider failure)
+          await dispatchPaymentFailedEvent(order.id, failureReason);
+        }
       }
+    }
 
-      // Trigger PDF Invoice generation & Email delivery
-      try {
-        const { data: items } = await adminDb
-          .from('order_items')
-          .select('*, products(name)')
-          .eq('order_id', order.id);
+    // 3. Process refund events (refund.processed / refund.created)
+    else if (event === 'refund.processed' || event === 'refund.created') {
+      const refundEntity = payload.payload?.refund?.entity || {};
+      const razorpayPaymentId = refundEntity.payment_id;
+      const refundAmount = refundEntity.amount; // in paise
 
-        const pdfBuffer = await generateInvoicePdf(order, items || []);
-        await sendInvoiceEmail(order, items || [], pdfBuffer);
+      if (razorpayPaymentId) {
+        const { data: order } = await adminDb
+          .from('orders')
+          .select('*')
+          .eq('razorpay_payment_id', razorpayPaymentId)
+          .single();
 
-        console.log(`[RAZORPAY WEBHOOK] Invoice email sent for order ${order.id}`);
-      } catch (notifyErr) {
-        console.error('[RAZORPAY WEBHOOK] Non-blocking email dispatch failure', notifyErr);
+        if (order) {
+          await adminDb
+            .from('orders')
+            .update({
+              payment_status: 'refunded',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', order.id);
+
+          await dispatchRefundCompletedEvent(order.id, refundAmount);
+        }
       }
     }
 
