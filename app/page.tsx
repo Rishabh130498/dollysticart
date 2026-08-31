@@ -187,7 +187,9 @@ export default async function Home() {
       
       {/* Loop Campaign Sections */}
       {displaySections.map((section) => {
-        const content = section.published_content?.heading || section.published_content?.items || section.published_content?.text || section.published_content?.html || section.published_content?.height ? section.published_content : (section.content || section.draft_content || {});
+        const content = (section.published_content && Object.keys(section.published_content).length > 0) 
+          ? section.published_content 
+          : (section.content || section.draft_content || {});
 
         switch (section.type) {
           

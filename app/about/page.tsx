@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import FormattedText from '@/components/common/FormattedText';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const DEFAULT_ABOUT_CONTENT = {
   hero_subtitle: "Editorial Story",
@@ -39,9 +40,11 @@ export default async function AboutPage() {
       .from('homepage_sections')
       .select('published_content')
       .eq('type', 'about_page')
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
-    if (data?.published_content) {
+    if (data?.published_content && Object.keys(data.published_content).length > 0) {
       content = { ...DEFAULT_ABOUT_CONTENT, ...data.published_content };
     }
   } catch (err) {

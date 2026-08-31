@@ -12,16 +12,14 @@ export default function FormattedText({
   // Split text by double newlines (\n\n) or blank lines into separate paragraph blocks
   const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
 
-  if (paragraphs.length <= 1) {
-    return <div className={`whitespace-pre-line ${className}`}>{text}</div>;
-  }
+  if (paragraphs.length === 0) return null;
 
   return (
     <div className="space-y-4">
       {paragraphs.map((para, idx) => (
-        <div key={idx} className={`whitespace-pre-line ${className}`}>
+        <p key={idx} className={`whitespace-pre-line ${className}`}>
           {para}
-        </div>
+        </p>
       ))}
     </div>
   );

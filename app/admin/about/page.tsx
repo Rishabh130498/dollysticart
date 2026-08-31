@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Save, Eye, EyeOff, RotateCcw, Monitor, CheckCircle, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import InlineText from '@/components/admin/InlineText';
 import ImageDropzone from '@/components/admin/ImageDropzone';
+import FormattedText from '@/components/common/FormattedText';
+import { revalidateCmsPaths } from '@/app/actions/cms-actions';
 
 const DEFAULT_ABOUT_CONTENT = {
   hero_subtitle: "Editorial Story",
@@ -34,6 +37,7 @@ const DEFAULT_ABOUT_CONTENT = {
 };
 
 export default function AdminAboutEditor() {
+  const router = useRouter();
   const [content, setContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(true);
@@ -82,25 +86,27 @@ export default function AdminAboutEditor() {
           .eq('type', 'about_page')
           .maybeSingle();
 
-        if (secData) {
-          setContent(secData.draft_content || DEFAULT_ABOUT_CONTENT);
+        if (secData && secData.draft_content && Object.keys(secData.draft_content).length > 0) {
+          setContent({ ...DEFAULT_ABOUT_CONTENT, ...secData.draft_content });
+        } else if (secData) {
+          setContent(DEFAULT_ABOUT_CONTENT);
         } else {
-          const { data: newRow, error: insertError } = await supabase
+          const { data: newRow, error: insertErr } = await supabase
             .from('homepage_sections')
             .insert([
               {
                 type: 'about_page',
                 sort_order: 100,
-                is_visible: false,
+                is_visible: true,
                 draft_content: DEFAULT_ABOUT_CONTENT,
                 published_content: DEFAULT_ABOUT_CONTENT
               }
             ])
             .select()
-            .single();
+            .maybeSingle();
 
-          if (insertError) throw insertError;
-          setContent(newRow.draft_content);
+          if (insertErr) console.error('Insert initialization error:', insertErr);
+          setContent(newRow?.draft_content ? { ...DEFAULT_ABOUT_CONTENT, ...newRow.draft_content } : DEFAULT_ABOUT_CONTENT);
         }
       } catch (err) {
         console.error('Error loading about admin details:', err);
@@ -122,13 +128,39 @@ export default function AdminAboutEditor() {
     setSaving(true);
     setSaveStatus('saving');
     try {
-      const { error } = await supabase
+      const { data: updateData, error: updateErr } = await supabase
         .from('homepage_sections')
-        .update({ draft_content: content })
-        .eq('type', 'about_page');
+        .update({
+          is_visible: true,
+          draft_content: content,
+          updated_at: new Date().toISOString()
+        })
+        .eq('type', 'about_page')
+        .select();
 
-      if (error) throw error;
+      if (updateErr) throw updateErr;
+
+      if (!updateData || updateData.length === 0) {
+        const { data: insertData, error: insertErr } = await supabase
+          .from('homepage_sections')
+          .insert([
+            {
+              type: 'about_page',
+              sort_order: 100,
+              is_visible: true,
+              draft_content: content,
+              published_content: content
+            }
+          ])
+          .select();
+
+        if (insertErr) throw insertErr;
+        if (!insertData || insertData.length === 0) {
+          throw new Error('Failed to save about page draft to database.');
+        }
+      }
       setSaveStatus('saved');
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Error saving about page draft.');
@@ -142,17 +174,41 @@ export default function AdminAboutEditor() {
     setSaving(true);
     setSaveStatus('saving');
     try {
-      const { error } = await supabase
+      const { data: updateData, error: updateErr } = await supabase
         .from('homepage_sections')
         .update({ 
           draft_content: content,
           published_content: content,
-          is_visible: true 
+          is_visible: true,
+          updated_at: new Date().toISOString()
         })
-        .eq('type', 'about_page');
+        .eq('type', 'about_page')
+        .select();
 
-      if (error) throw error;
+      if (updateErr) throw updateErr;
+
+      if (!updateData || updateData.length === 0) {
+        const { data: insertData, error: insertErr } = await supabase
+          .from('homepage_sections')
+          .insert([
+            {
+              type: 'about_page',
+              sort_order: 100,
+              is_visible: true,
+              draft_content: content,
+              published_content: content
+            }
+          ])
+          .select();
+
+        if (insertErr) throw insertErr;
+        if (!insertData || insertData.length === 0) {
+          throw new Error('Failed to publish about page to database.');
+        }
+      }
+      await revalidateCmsPaths(['/about', '/admin/about']);
       setSaveStatus('saved');
+      router.refresh();
       alert('About Page published successfully!');
     } catch (err: any) {
       console.error(err);
@@ -346,28 +402,24 @@ export default function AdminAboutEditor() {
               )}
             </h2>
             <div className="font-sans text-xs sm:text-sm text-foreground/80 leading-relaxed space-y-4">
-              <p>
-                {editMode ? (
-                  <InlineText
-                    value={content.origin_body_1 || ''}
-                    type="textarea"
-                    onChange={(val) => updateDraft({ origin_body_1: val })}
-                  />
-                ) : (
-                  content.origin_body_1
-                )}
-              </p>
-              <p>
-                {editMode ? (
-                  <InlineText
-                    value={content.origin_body_2 || ''}
-                    type="textarea"
-                    onChange={(val) => updateDraft({ origin_body_2: val })}
-                  />
-                ) : (
-                  content.origin_body_2
-                )}
-              </p>
+              {editMode ? (
+                <InlineText
+                  value={content.origin_body_1 || ''}
+                  type="textarea"
+                  onChange={(val) => updateDraft({ origin_body_1: val })}
+                />
+              ) : (
+                <FormattedText text={content.origin_body_1} />
+              )}
+              {editMode ? (
+                <InlineText
+                  value={content.origin_body_2 || ''}
+                  type="textarea"
+                  onChange={(val) => updateDraft({ origin_body_2: val })}
+                />
+              ) : (
+                <FormattedText text={content.origin_body_2} />
+              )}
             </div>
           </div>
         </section>
@@ -396,28 +448,24 @@ export default function AdminAboutEditor() {
               )}
             </h2>
             <div className="font-sans text-xs sm:text-sm text-foreground/80 leading-relaxed space-y-4">
-              <p>
-                {editMode ? (
-                  <InlineText
-                    value={content.process_body_1 || ''}
-                    type="textarea"
-                    onChange={(val) => updateDraft({ process_body_1: val })}
-                  />
-                ) : (
-                  content.process_body_1
-                )}
-              </p>
-              <p>
-                {editMode ? (
-                  <InlineText
-                    value={content.process_body_2 || ''}
-                    type="textarea"
-                    onChange={(val) => updateDraft({ process_body_2: val })}
-                  />
-                ) : (
-                  content.process_body_2
-                )}
-              </p>
+              {editMode ? (
+                <InlineText
+                  value={content.process_body_1 || ''}
+                  type="textarea"
+                  onChange={(val) => updateDraft({ process_body_1: val })}
+                />
+              ) : (
+                <FormattedText text={content.process_body_1} />
+              )}
+              {editMode ? (
+                <InlineText
+                  value={content.process_body_2 || ''}
+                  type="textarea"
+                  onChange={(val) => updateDraft({ process_body_2: val })}
+                />
+              ) : (
+                <FormattedText text={content.process_body_2} />
+              )}
             </div>
           </div>
           <div className="order-1 md:order-2">
@@ -478,17 +526,16 @@ export default function AdminAboutEditor() {
                   content.timeline_phase_1_title
                 )}
               </h4>
-              <p className="font-sans text-xs text-muted leading-relaxed">
-                {editMode ? (
-                  <InlineText
-                    value={content.timeline_phase_1_body || ''}
-                    type="textarea"
-                    onChange={(val) => updateDraft({ timeline_phase_1_body: val })}
-                  />
-                ) : (
-                  content.timeline_phase_1_body
-                )}
-              </p>
+              {editMode ? (
+                <InlineText
+                  value={content.timeline_phase_1_body || ''}
+                  type="textarea"
+                  className="font-sans text-xs text-muted leading-relaxed font-normal"
+                  onChange={(val) => updateDraft({ timeline_phase_1_body: val })}
+                />
+              ) : (
+                <FormattedText text={content.timeline_phase_1_body} className="font-sans text-xs text-muted leading-relaxed" />
+              )}
             </div>
 
             {/* Phase 2 */}
@@ -513,17 +560,16 @@ export default function AdminAboutEditor() {
                   content.timeline_phase_2_title
                 )}
               </h4>
-              <p className="font-sans text-xs text-muted leading-relaxed">
-                {editMode ? (
-                  <InlineText
-                    value={content.timeline_phase_2_body || ''}
-                    type="textarea"
-                    onChange={(val) => updateDraft({ timeline_phase_2_body: val })}
-                  />
-                ) : (
-                  content.timeline_phase_2_body
-                )}
-              </p>
+              {editMode ? (
+                <InlineText
+                  value={content.timeline_phase_2_body || ''}
+                  type="textarea"
+                  className="font-sans text-xs text-muted leading-relaxed font-normal"
+                  onChange={(val) => updateDraft({ timeline_phase_2_body: val })}
+                />
+              ) : (
+                <FormattedText text={content.timeline_phase_2_body} className="font-sans text-xs text-muted leading-relaxed" />
+              )}
             </div>
 
             {/* Phase 3 */}
@@ -548,17 +594,16 @@ export default function AdminAboutEditor() {
                   content.timeline_phase_3_title
                 )}
               </h4>
-              <p className="font-sans text-xs text-muted leading-relaxed">
-                {editMode ? (
-                  <InlineText
-                    value={content.timeline_phase_3_body || ''}
-                    type="textarea"
-                    onChange={(val) => updateDraft({ timeline_phase_3_body: val })}
-                  />
-                ) : (
-                  content.timeline_phase_3_body
-                )}
-              </p>
+              {editMode ? (
+                <InlineText
+                  value={content.timeline_phase_3_body || ''}
+                  type="textarea"
+                  className="font-sans text-xs text-muted leading-relaxed font-normal"
+                  onChange={(val) => updateDraft({ timeline_phase_3_body: val })}
+                />
+              ) : (
+                <FormattedText text={content.timeline_phase_3_body} className="font-sans text-xs text-muted leading-relaxed" />
+              )}
             </div>
 
           </div>

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.31] - 2026-08-31
+
+### Added
+- Created `revalidateCmsPaths` server action ([`app/actions/cms-actions.ts`](file:///d:/Projects/antigravity/dollysticart_ecom/app/actions/cms-actions.ts)) to purge Next.js server component and client router caches upon CMS page publishing (`about`, `terms`, `privacy`, `contact`, `customize-art`, `homepage`).
+
+### Fixed
+- Fixed CMS draft saving and publishing real-time input state synchronization ([`components/admin/InlineText.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/components/admin/InlineText.tsx)) by executing `onChange` immediately on every keystroke event.
+- Resolved PostgREST error `PGRST116` caused by database duplicate rows in `homepage_sections`. Purged duplicate rows and added `.order('updated_at', { ascending: false }).limit(1).maybeSingle()` query guard across all public storefront routes (`/about`, `/terms`, `/privacy`, `/contact`, `/customize-art`).
+- Fixed multiline paragraph break and spacing collapse across Draft, Preview, and Published views by utilizing `<FormattedText>` ([`components/common/FormattedText.tsx`](file:///d:/Projects/antigravity/dollysticart_ecom/components/common/FormattedText.tsx)).
+- Forwarded `${className}` and `font-normal` props to `<textarea>` and `<input>` elements in `InlineText.tsx` so active text inputs match surrounding typography and do not render extra bold in Edit mode.
+
+---
+
 ## [0.1.30] - 2026-08-30
 
 ### Added

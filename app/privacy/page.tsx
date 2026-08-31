@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 import FormattedText from '@/components/common/FormattedText';
 import type { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: 'Privacy Policy | Dollysticart Studio',
   description: 'Privacy Policy and Data Handling Commitment at Dollysticart Studio.',
@@ -36,9 +39,11 @@ export default async function PrivacyPage() {
       .from('homepage_sections')
       .select('published_content')
       .eq('type', 'privacy_policy')
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
-    if (secData?.published_content) {
+    if (secData?.published_content && Object.keys(secData.published_content).length > 0) {
       content = { ...DEFAULT_PRIVACY_CONTENT, ...secData.published_content };
     }
   } catch (e) {

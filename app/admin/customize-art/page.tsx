@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Save, Eye, EyeOff, RotateCcw, Monitor, CheckCircle, ArrowLeft, Send, Calendar, MessageSquare, User, Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import InlineText from '@/components/admin/InlineText';
+import FormattedText from '@/components/common/FormattedText';
+import { revalidateCmsPaths } from '@/app/actions/cms-actions';
 
 const DEFAULT_CUSTOMIZE_CONTENT = {
   hero_subtitle: "Bespoke Curation",
@@ -13,6 +16,7 @@ const DEFAULT_CUSTOMIZE_CONTENT = {
 };
 
 export default function AdminCustomizeEditor() {
+  const router = useRouter();
   const [content, setContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(true);
@@ -70,25 +74,27 @@ export default function AdminCustomizeEditor() {
           .eq('type', 'customize_page')
           .maybeSingle();
 
-        if (secData) {
-          setContent(secData.draft_content || DEFAULT_CUSTOMIZE_CONTENT);
+        if (secData && secData.draft_content && Object.keys(secData.draft_content).length > 0) {
+          setContent({ ...DEFAULT_CUSTOMIZE_CONTENT, ...secData.draft_content });
+        } else if (secData) {
+          setContent(DEFAULT_CUSTOMIZE_CONTENT);
         } else {
-          const { data: newRow, error: insertError } = await supabase
+          const { data: newRow, error: insertErr } = await supabase
             .from('homepage_sections')
             .insert([
               {
                 type: 'customize_page',
                 sort_order: 102,
-                is_visible: false,
+                is_visible: true,
                 draft_content: DEFAULT_CUSTOMIZE_CONTENT,
                 published_content: DEFAULT_CUSTOMIZE_CONTENT
               }
             ])
             .select()
-            .single();
+            .maybeSingle();
 
-          if (insertError) throw insertError;
-          setContent(newRow.draft_content);
+          if (insertErr) console.error('Insert initialization error:', insertErr);
+          setContent(newRow?.draft_content ? { ...DEFAULT_CUSTOMIZE_CONTENT, ...newRow.draft_content } : DEFAULT_CUSTOMIZE_CONTENT);
         }
       } catch (err) {
         console.error('Error loading customize admin details:', err);
@@ -110,13 +116,39 @@ export default function AdminCustomizeEditor() {
     setSaving(true);
     setSaveStatus('saving');
     try {
-      const { error } = await supabase
+      const { data: updateData, error: updateErr } = await supabase
         .from('homepage_sections')
-        .update({ draft_content: content })
-        .eq('type', 'customize_page');
+        .update({ 
+          is_visible: true,
+          draft_content: content,
+          updated_at: new Date().toISOString()
+        })
+        .eq('type', 'customize_page')
+        .select();
 
-      if (error) throw error;
+      if (updateErr) throw updateErr;
+
+      if (!updateData || updateData.length === 0) {
+        const { data: insertData, error: insertErr } = await supabase
+          .from('homepage_sections')
+          .insert([
+            {
+              type: 'customize_page',
+              sort_order: 102,
+              is_visible: true,
+              draft_content: content,
+              published_content: content
+            }
+          ])
+          .select();
+
+        if (insertErr) throw insertErr;
+        if (!insertData || insertData.length === 0) {
+          throw new Error('Failed to save customize art page draft to database.');
+        }
+      }
       setSaveStatus('saved');
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Error saving customize page draft.');
@@ -130,17 +162,41 @@ export default function AdminCustomizeEditor() {
     setSaving(true);
     setSaveStatus('saving');
     try {
-      const { error } = await supabase
+      const { data: updateData, error: updateErr } = await supabase
         .from('homepage_sections')
         .update({ 
           draft_content: content,
           published_content: content,
-          is_visible: true 
+          is_visible: true,
+          updated_at: new Date().toISOString()
         })
-        .eq('type', 'customize_page');
+        .eq('type', 'customize_page')
+        .select();
 
-      if (error) throw error;
+      if (updateErr) throw updateErr;
+
+      if (!updateData || updateData.length === 0) {
+        const { data: insertData, error: insertErr } = await supabase
+          .from('homepage_sections')
+          .insert([
+            {
+              type: 'customize_page',
+              sort_order: 102,
+              is_visible: true,
+              draft_content: content,
+              published_content: content
+            }
+          ])
+          .select();
+
+        if (insertErr) throw insertErr;
+        if (!insertData || insertData.length === 0) {
+          throw new Error('Failed to publish customize art page to database.');
+        }
+      }
+      await revalidateCmsPaths(['/customize-art', '/admin/customize-art']);
       setSaveStatus('saved');
+      router.refresh();
       alert('Customize Art Page published successfully!');
     } catch (err: any) {
       console.error(err);
@@ -318,17 +374,15 @@ export default function AdminCustomizeEditor() {
                   content.hero_title
                 )}
               </h1>
-              <p className="font-sans text-xs text-muted leading-relaxed max-w-lg">
-                {editMode ? (
-                  <InlineText
-                    value={content.hero_description || ''}
-                    type="textarea"
-                    onChange={(val) => updateDraft({ hero_description: val })}
-                  />
-                ) : (
-                  content.hero_description
-                )}
-              </p>
+              {editMode ? (
+                <InlineText
+                  value={content.hero_description || ''}
+                  type="textarea"
+                  onChange={(val) => updateDraft({ hero_description: val })}
+                />
+              ) : (
+                <FormattedText text={content.hero_description} className="font-sans text-xs text-muted leading-relaxed max-w-lg" />
+              )}
             </div>
 
             {/* Interactive Form Preview Mode */}

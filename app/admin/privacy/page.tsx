@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowLeft, CheckCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import InlineText from '@/components/admin/InlineText';
+import FormattedText from '@/components/common/FormattedText';
+import { revalidateCmsPaths } from '@/app/actions/cms-actions';
 
 const DEFAULT_PRIVACY_CONTENT = {
   title: 'Privacy Policy',
@@ -23,6 +26,7 @@ const DEFAULT_PRIVACY_CONTENT = {
 };
 
 export default function AdminPrivacyEditor() {
+  const router = useRouter();
   const [content, setContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(true);
@@ -47,10 +51,12 @@ export default function AdminPrivacyEditor() {
           .eq('type', 'privacy_policy')
           .maybeSingle();
 
-        if (secData) {
-          setContent(secData.draft_content || DEFAULT_PRIVACY_CONTENT);
+        if (secData && secData.draft_content && Object.keys(secData.draft_content).length > 0) {
+          setContent({ ...DEFAULT_PRIVACY_CONTENT, ...secData.draft_content });
+        } else if (secData) {
+          setContent(DEFAULT_PRIVACY_CONTENT);
         } else {
-          const { data: newRow } = await supabase
+          const { data: newRow, error: insertErr } = await supabase
             .from('homepage_sections')
             .insert([
               {
@@ -62,9 +68,10 @@ export default function AdminPrivacyEditor() {
               }
             ])
             .select()
-            .single();
+            .maybeSingle();
 
-          setContent(newRow ? newRow.draft_content : DEFAULT_PRIVACY_CONTENT);
+          if (insertErr) console.error('Insert initialization error:', insertErr);
+          setContent(newRow?.draft_content ? { ...DEFAULT_PRIVACY_CONTENT, ...newRow.draft_content } : DEFAULT_PRIVACY_CONTENT);
         }
       } catch (err) {
         console.error('Error loading privacy policy admin details:', err);
@@ -86,13 +93,39 @@ export default function AdminPrivacyEditor() {
     setSaving(true);
     setSaveStatus('saving');
     try {
-      const { error } = await supabase
+      const { data: updateData, error: updateErr } = await supabase
         .from('homepage_sections')
-        .update({ draft_content: content })
-        .eq('type', 'privacy_policy');
+        .update({ 
+          is_visible: true,
+          draft_content: content,
+          updated_at: new Date().toISOString()
+        })
+        .eq('type', 'privacy_policy')
+        .select();
 
-      if (error) throw error;
+      if (updateErr) throw updateErr;
+
+      if (!updateData || updateData.length === 0) {
+        const { data: insertData, error: insertErr } = await supabase
+          .from('homepage_sections')
+          .insert([
+            {
+              type: 'privacy_policy',
+              sort_order: 200,
+              is_visible: true,
+              draft_content: content,
+              published_content: content
+            }
+          ])
+          .select();
+
+        if (insertErr) throw insertErr;
+        if (!insertData || insertData.length === 0) {
+          throw new Error('Failed to save privacy policy draft to database.');
+        }
+      }
       setSaveStatus('saved');
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Error saving privacy policy draft.');
@@ -106,17 +139,41 @@ export default function AdminPrivacyEditor() {
     setSaving(true);
     setSaveStatus('saving');
     try {
-      const { error } = await supabase
+      const { data: updateData, error: updateErr } = await supabase
         .from('homepage_sections')
         .update({ 
           draft_content: content,
           published_content: content,
-          is_visible: true 
+          is_visible: true,
+          updated_at: new Date().toISOString()
         })
-        .eq('type', 'privacy_policy');
+        .eq('type', 'privacy_policy')
+        .select();
 
-      if (error) throw error;
+      if (updateErr) throw updateErr;
+
+      if (!updateData || updateData.length === 0) {
+        const { data: insertData, error: insertErr } = await supabase
+          .from('homepage_sections')
+          .insert([
+            {
+              type: 'privacy_policy',
+              sort_order: 200,
+              is_visible: true,
+              draft_content: content,
+              published_content: content
+            }
+          ])
+          .select();
+
+        if (insertErr) throw insertErr;
+        if (!insertData || insertData.length === 0) {
+          throw new Error('Failed to publish privacy policy to database.');
+        }
+      }
+      await revalidateCmsPaths(['/privacy', '/admin/privacy']);
       setSaveStatus('saved');
+      router.refresh();
       alert('Privacy Policy published successfully!');
     } catch (err: any) {
       console.error(err);
@@ -237,13 +294,11 @@ export default function AdminPrivacyEditor() {
               content.section_1_title
             )}
           </h3>
-          <p className="font-sans text-xs text-muted leading-relaxed">
-            {editMode ? (
-              <InlineText value={content.section_1_body || ''} type="textarea" onChange={(val) => updateDraft({ section_1_body: val })} />
-            ) : (
-              content.section_1_body
-            )}
-          </p>
+          {editMode ? (
+            <InlineText value={content.section_1_body || ''} type="textarea" onChange={(val) => updateDraft({ section_1_body: val })} />
+          ) : (
+            <FormattedText text={content.section_1_body} className="font-sans text-xs text-muted leading-relaxed" />
+          )}
         </div>
 
         {/* Section 2 */}
@@ -255,13 +310,11 @@ export default function AdminPrivacyEditor() {
               content.section_2_title
             )}
           </h3>
-          <p className="font-sans text-xs text-muted leading-relaxed">
-            {editMode ? (
-              <InlineText value={content.section_2_body || ''} type="textarea" onChange={(val) => updateDraft({ section_2_body: val })} />
-            ) : (
-              content.section_2_body
-            )}
-          </p>
+          {editMode ? (
+            <InlineText value={content.section_2_body || ''} type="textarea" onChange={(val) => updateDraft({ section_2_body: val })} />
+          ) : (
+            <FormattedText text={content.section_2_body} className="font-sans text-xs text-muted leading-relaxed" />
+          )}
         </div>
 
         {/* Section 3 */}
@@ -273,13 +326,11 @@ export default function AdminPrivacyEditor() {
               content.section_3_title
             )}
           </h3>
-          <p className="font-sans text-xs text-muted leading-relaxed">
-            {editMode ? (
-              <InlineText value={content.section_3_body || ''} type="textarea" onChange={(val) => updateDraft({ section_3_body: val })} />
-            ) : (
-              content.section_3_body
-            )}
-          </p>
+          {editMode ? (
+            <InlineText value={content.section_3_body || ''} type="textarea" onChange={(val) => updateDraft({ section_3_body: val })} />
+          ) : (
+            <FormattedText text={content.section_3_body} className="font-sans text-xs text-muted leading-relaxed" />
+          )}
         </div>
 
         {/* Section 4 */}
@@ -291,13 +342,11 @@ export default function AdminPrivacyEditor() {
               content.section_4_title
             )}
           </h3>
-          <p className="font-sans text-xs text-muted leading-relaxed">
-            {editMode ? (
-              <InlineText value={content.section_4_body || ''} type="textarea" onChange={(val) => updateDraft({ section_4_body: val })} />
-            ) : (
-              content.section_4_body
-            )}
-          </p>
+          {editMode ? (
+            <InlineText value={content.section_4_body || ''} type="textarea" onChange={(val) => updateDraft({ section_4_body: val })} />
+          ) : (
+            <FormattedText text={content.section_4_body} className="font-sans text-xs text-muted leading-relaxed" />
+          )}
         </div>
 
         {/* Section 5 */}
@@ -309,13 +358,11 @@ export default function AdminPrivacyEditor() {
               content.section_5_title
             )}
           </h3>
-          <p className="font-sans text-xs text-muted leading-relaxed">
-            {editMode ? (
-              <InlineText value={content.section_5_body || ''} type="textarea" onChange={(val) => updateDraft({ section_5_body: val })} />
-            ) : (
-              content.section_5_body
-            )}
-          </p>
+          {editMode ? (
+            <InlineText value={content.section_5_body || ''} type="textarea" onChange={(val) => updateDraft({ section_5_body: val })} />
+          ) : (
+            <FormattedText text={content.section_5_body} className="font-sans text-xs text-muted leading-relaxed" />
+          )}
         </div>
 
       </div>

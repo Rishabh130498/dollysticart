@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 
 import InlineText from '@/components/admin/InlineText';
 import ImageDropzone from '@/components/admin/ImageDropzone';
+import { revalidateCmsPaths } from '@/app/actions/cms-actions';
 
 // --- PREDEFINED ELEMENTOR BLUEPRINT CONFIGURATIONS ---
 const PREDEFINED_SECTIONS: Record<string, { type: string; draft_content: any }> = {
@@ -512,7 +513,7 @@ export default function ElementorHomepageEditor() {
 
         if (isNew) {
           // INSERT new record (let database generate UUID)
-          const { error: insertErr } = await supabase
+          const { data: insertedData, error: insertErr } = await supabase
             .from('homepage_sections')
             .insert({
               type: section.type,
@@ -520,15 +521,19 @@ export default function ElementorHomepageEditor() {
               is_visible: section.is_visible,
               draft_content: section.draft_content,
               published_content: section.published_content || {}
-            });
+            })
+            .select();
           if (insertErr) throw insertErr;
+          if (!insertedData || insertedData.length === 0) throw new Error(`Failed to insert section ${section.type}`);
         } else {
           // UPDATE existing record in-place by ID (preserves created_at)
-          const { error: updateErr } = await supabase
+          const { data: updatedData, error: updateErr } = await supabase
             .from('homepage_sections')
             .update(payload)
-            .eq('id', section.id);
+            .eq('id', section.id)
+            .select();
           if (updateErr) throw updateErr;
+          if (!updatedData || updatedData.length === 0) throw new Error(`Failed to update section ID ${section.id}`);
         }
       }
 
@@ -606,16 +611,20 @@ export default function ElementorHomepageEditor() {
         };
 
         if (isNew) {
-          const { error: insertErr } = await supabase
+          const { data: insertedData, error: insertErr } = await supabase
             .from('homepage_sections')
-            .insert(payload);
+            .insert(payload)
+            .select();
           if (insertErr) throw insertErr;
+          if (!insertedData || insertedData.length === 0) throw new Error(`Failed to insert section ${section.type}`);
         } else {
-          const { error: updateErr } = await supabase
+          const { data: updatedData, error: updateErr } = await supabase
             .from('homepage_sections')
             .update(payload)
-            .eq('id', section.id);
+            .eq('id', section.id)
+            .select();
           if (updateErr) throw updateErr;
+          if (!updatedData || updatedData.length === 0) throw new Error(`Failed to update section ID ${section.id}`);
         }
       }
 
@@ -632,6 +641,8 @@ export default function ElementorHomepageEditor() {
 
       const copy = JSON.parse(JSON.stringify(data || []));
       updateSectionsState(copy, 'Publish Live');
+
+      await revalidateCmsPaths(['/', '/admin/homepage']);
 
       setSuccessMsg('Congratulations! Homepage published live successfully.');
       setTimeout(() => setSuccessMsg(''), 3000);

@@ -57,9 +57,11 @@ export default function ContactPage() {
           .from('homepage_sections')
           .select('published_content')
           .eq('type', 'contact_page')
+          .order('updated_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
-        if (data?.published_content) {
+        if (data?.published_content && Object.keys(data.published_content).length > 0) {
           setContent({ ...DEFAULT_CONTACT_CONTENT, ...data.published_content });
         }
       } catch (err) {

@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 import FormattedText from '@/components/common/FormattedText';
 import type { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: 'Terms of Service | Dollysticart Studio',
   description: 'Terms of Service and Store Policy Agreement at Dollysticart Studio.',
@@ -36,9 +39,11 @@ export default async function TermsPage() {
       .from('homepage_sections')
       .select('published_content')
       .eq('type', 'terms_of_service')
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
-    if (secData?.published_content) {
+    if (secData?.published_content && Object.keys(secData.published_content).length > 0) {
       content = { ...DEFAULT_TERMS_CONTENT, ...secData.published_content };
     }
   } catch (e) {
